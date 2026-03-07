@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light Mode Palette (Default) */
+    --color-bg: 255 255 255;
+    --color-surface: 246 245 245;
+    --color-primary: 65 75 234;
+    --color-secondary: 240 85 55;
+    --color-accent: 119 82 254;
+    --color-error: 240 85 55;
+    --color-text-main: 34 34 34;
+    --color-text-muted: 61 59 64;
+  }
+
+  .dark {
+    /* Dark Mode Palette (Brand Dark) */
+    --color-bg: 34 34 34;
+    --color-surface: 61 59 64;
+    --color-primary: 65 75 234;
+    --color-secondary: 240 85 55;
+    --color-accent: 119 82 254;
+    --color-error: 240 85 55;
+    --color-text-main: 255 255 255;
+    --color-text-muted: 191 207 231;
+  }
+
+  body {
+    @apply bg-background text-text-main antialiased;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+  }
+}
