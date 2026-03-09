@@ -9,7 +9,7 @@ exports.getUserProfile = async (req, res) => {
     try {
         const user = await prisma.user.findUnique({
             where: { id: req.user.id },
-            include: { stats: true }
+            include: { stats: true, achievements: true }
         });
 
         if (!user) {

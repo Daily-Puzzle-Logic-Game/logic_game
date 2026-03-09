@@ -2,7 +2,8 @@
  * Deduction Grid (Einstein Puzzle Variant) Generator
  * 3x3 simplified version for daily play.
  */
-export const generateDeductionGrid = (seededRandom) => {
+export const generateDeductionGrid = (seededRandom, options = {}) => {
+    const difficulty = options.difficulty ?? 2;
     // Categories
     const people = ['Alex', 'Blake', 'Casey'];
     const colors = ['Red', 'Green', 'Blue'];
@@ -35,9 +36,18 @@ export const generateDeductionGrid = (seededRandom) => {
         `${solution['Alex'].color === 'Red' ? 'Alex' : 'The person in the Red house'} doesn't have the ${items.find(i => i !== solution[Object.keys(solution).find(k => solution[k].color === 'Red')].item)}.`,
     ];
 
-    // Pick 3 interesting clues
+    const clueCountMap = {
+        1: 4,
+        2: 3,
+        3: 2,
+        4: 2
+    };
+    // Harder levels provide fewer direct clues.
+    const clueCount = clueCountMap[difficulty] ?? 3;
+
+    // Pick clues according to difficulty level.
     seededRandom.shuffle(potentialClues);
-    const clues = potentialClues.slice(0, 3);
+    const clues = potentialClues.slice(0, clueCount);
 
     const initial = {
         Alex: { color: null, item: null },

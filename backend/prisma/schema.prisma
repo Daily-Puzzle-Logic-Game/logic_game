@@ -3,13 +3,14 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model User {
   id          String   @id @default(uuid())
   email       String   @unique
+  password    String?
   name        String?
   picture     String?
   streakCount Int      @default(0)
@@ -20,6 +21,7 @@ model User {
   
   stats       UserStats?
   dailyScores DailyScore[]
+  achievements Achievement[]
 }
 
 model UserStats {
@@ -42,3 +44,17 @@ model DailyScore {
 
   @@unique([userId, date]) // A user can only have one score per day
 }
+
+
+model Achievement {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  badgeType String   // e.g., 'SOLVED_50', 'STREAK_30', 'NO_HINTS'
+  earnedAt  DateTime @default(now())
+
+  @@unique([userId, badgeType])
+}
+
+
+

@@ -1,12 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* Light Mode Palette (Default) */
-    --color-bg: 255 255 255;
-    --color-surface: 246 245 245;
+    --color-bg: 246 245 245;
+    --color-surface: 255 255 255;
     --color-primary: 65 75 234;
     --color-secondary: 240 85 55;
     --color-accent: 119 82 254;
@@ -16,31 +17,32 @@
   }
 
   .dark {
-    /* Dark Mode Palette (Brand Dark) */
-    --color-bg: 34 34 34;
-    --color-surface: 61 59 64;
-    --color-primary: 65 75 234;
-    --color-secondary: 240 85 55;
-    --color-accent: 119 82 254;
-    --color-error: 240 85 55;
-    --color-text-main: 255 255 255;
+    --color-bg: 17 18 33;
+    --color-surface: 24 26 54;
+    --color-text-main: 248 237 255;
     --color-text-muted: 191 207 231;
   }
 
   body {
-    @apply bg-background text-text-main antialiased;
+    font-family: 'Poppins', 'Open Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: rgb(var(--color-text-main));
+    min-height: 100vh;
+    margin: 0;
+    background: radial-gradient(circle at top left, rgba(248, 237, 255, 0.5), transparent 40%),
+      linear-gradient(180deg, #F6F5F5 0%, #FFFFFF 60%, #F6F5F5 100%);
   }
-}
 
-@layer utilities {
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
+  .dark body {
+    background: radial-gradient(circle at top right, rgba(119, 82, 254, 0.4), transparent 40%),
+      linear-gradient(180deg, rgba(10, 12, 30, 0.95), rgba(17, 18, 33, 1));
   }
 
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    /* IE and Edge */
-    scrollbar-width: none;
-    /* Firefox */
+  * {
+    box-sizing: border-box;
+  }
+
+  ::selection {
+    background: rgba(65, 75, 234, 0.6);
+    color: #fff;
   }
 }

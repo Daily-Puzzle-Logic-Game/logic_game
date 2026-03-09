@@ -1,4 +1,4 @@
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import MainLayout from './components/layout/MainLayout';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, Puzzle, Zap } from 'lucide-react';
@@ -8,9 +8,43 @@ import PuzzleContainer from './components/puzzle/PuzzleContainer';
 import Profile from './pages/Profile';
 import GamesLibrary from './pages/GamesLibrary';
 import PracticeGame from './pages/PracticeGame';
+import ChallengePage from './pages/ChallengePage';
+import LandingPage from './pages/LandingPage';
+import LoginPage from './pages/LoginPage';
+import Leaderboard from './pages/Leaderboard';
+import HintlessHeroChallenge from './pages/HintlessHeroChallenge';
+import PuzzleMasterChallenge from './pages/PuzzleMasterChallenge';
+import StreakKeeperChallenge from './pages/StreakKeeperChallenge';
+import './App.css';
 
 const Home = ({ secondsToMidnight, user, todayProgress }) => {
   const navigate = useNavigate();
+  const ritualBriefs = [
+    {
+      title: 'Daily Rotation',
+      note: '24H cadence',
+      description: 'A new unique logic puzzle is unlocked every 24 hours at midnight IST.',
+      detail: 'A steady cadence keeps your focus calibrated from one reset to the next.',
+      icon: Puzzle,
+      accent: 'rules-benefits__card--sky'
+    },
+    {
+      title: 'Analyze & Solve',
+      note: 'Pattern workouts',
+      description: 'Decode patterns, solve binary circuits, and identify mathematical sequences.',
+      detail: 'Layered hints, proof-backed breakdowns, and micro-metrics keep you in the flow state.',
+      icon: Activity,
+      accent: 'rules-benefits__card--violet'
+    },
+    {
+      title: 'Build Your Streak',
+      note: 'Momentum lift',
+      description: 'Solve puzzles daily to maintain your streak and earn a spot on the Elite Leaderboard.',
+      detail: 'Earn tiered badges and streak rewards that make each consecutive win feel meaningful.',
+      icon: Zap,
+      accent: 'rules-benefits__card--amber'
+    }
+  ];
 
   return (
     <motion.div
@@ -19,43 +53,38 @@ const Home = ({ secondsToMidnight, user, todayProgress }) => {
       className="flex flex-col gap-16 pb-20"
     >
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-12 pb-20 px-4 md:px-8 bg-gradient-to-b from-brand-100 to-white rounded-[3rem] shadow-sm">
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-bold text-xs uppercase tracking-widest mb-6"
-          >
-            <Activity size={14} />
-            The Future of Logical Thinking
-          </motion.div>
-          <h1 className="text-4xl md:text-6xl font-black text-brand-900 mb-6 leading-tight">
-            Master Your Mind with <br />
-            <span className="text-primary italic">Bluestock Logic</span>
-          </h1>
-          <p className="text-lg text-text-muted max-w-2xl mx-auto mb-10 leading-relaxed">
-            Join thousands of traders and enthusiasts in the ultimate daily cognitive challenge.
-            Sharpen your intuition, solve complex circuits, and climb the global leaderboard.
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <button
-              onClick={() => document.getElementById('daily-challenge').scrollIntoView({ behavior: 'smooth' })}
-              className="px-10 py-4 bg-primary text-white rounded-2xl font-bold shadow-xl shadow-primary/20 hover:scale-105 transition-transform"
-            >
-              Play Daily Puzzle
-            </button>
-            <button
-              onClick={() => navigate('/games')}
-              className="px-10 py-4 bg-white border-2 border-brand-300 text-brand-900 rounded-2xl font-bold shadow-lg hover:bg-brand-50 transition-colors"
-            >
-              Explore All Games
-            </button>
-          </div>
+      <section className="home-hero relative text-center bg-report rounded-[3.5rem] pt-12 pb-16 px-6 md:px-10 shadow-2xl overflow-hidden">
+        <div className="home-hero__badge">
+          <Activity size={16} />
+          <span>The Future of Logical Thinking</span>
         </div>
-
-        {/* Decorative elements */}
-        <div className="absolute top-0 left-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-secondary/5 rounded-full blur-3xl translate-x-1/3 translate-y-1/3"></div>
+        <h1 className="home-hero__title">
+          Master Your Mind with <span>Bluestock Logic</span>
+        </h1>
+        <p className="home-hero__subtitle">
+          Thousands of traders sharpen daily intuition, solve complex logic circuits, and climb a leaderboard built for premium thinkers.
+        </p>
+        <div className="home-hero__actions">
+          <button
+            onClick={() => document.getElementById('daily-challenge').scrollIntoView({ behavior: 'smooth' })}
+            className="home-hero__cta"
+          >
+            Play Daily Puzzle
+          </button>
+          <button
+            onClick={() => navigate('/games')}
+            className="home-hero__ghost"
+          >
+            Explore All Games
+          </button>
+        </div>
+        <div className="home-hero__panel">
+          <p className="home-hero__panel-label">Spotlight ritual</p>
+          <p className="home-hero__panel-title">Daily logic reset</p>
+          <p className="home-hero__panel-meta">New challenge lands nightly at midnight</p>
+        </div>
+        <div className="home-hero__orb home-hero__orb--one" aria-hidden />
+        <div className="home-hero__orb home-hero__orb--two" aria-hidden />
       </section>
 
       {/* Main Feature: Daily Challenge */}
@@ -70,7 +99,7 @@ const Home = ({ secondsToMidnight, user, todayProgress }) => {
             </div>
             <div className="text-right">
               <p className="text-[10px] uppercase font-bold text-text-muted tracking-widest mb-1">Time Remaining</p>
-              <p className="font-mono text-xl text-brand-900 font-bold bg-brand-200 px-3 py-1 rounded-lg">
+              <p className="font-mono text-xl text-brand-900 dark:text-brand-100 font-bold bg-brand-200 dark:bg-brand-800/50 px-3 py-1 rounded-lg">
                 {formatTime(secondsToMidnight)}
               </p>
             </div>
@@ -80,31 +109,40 @@ const Home = ({ secondsToMidnight, user, todayProgress }) => {
         </div>
       </section>
 
-      {/* Rules & Benefits Section */}
-      <section className="max-w-4xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 text-center bg-brand-900 text-white p-12 rounded-[3.5rem] shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-3xl rounded-full"></div>
-        <div className="absolute bottom-0 left-0 w-32 h-32 bg-accent/20 blur-3xl rounded-full"></div>
-
-        <div className="space-y-4 relative z-10">
-          <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mx-auto">
-            <Puzzle className="text-primary" />
+      <section
+        className="rules-benefits"
+        aria-labelledby="rules-benefits-title"
+      >
+        <div className="rules-benefits__surface">
+          <div className="rules-benefits__glow" aria-hidden />
+          <div className="rules-benefits__header">
+            <p className="rules-benefits__tag">Rules & Benefits</p>
+            <h2 id="rules-benefits-title">Daily rituals that sharpen your logic</h2>
+            <p className="rules-benefits__lead">
+              Micro-rituals, layered analytics, and ceremonial resets make each session feel intentional. The Ritual Flow keeps you engaged, accountable, and ready for the next challenge.
+            </p>
           </div>
-          <h3 className="font-bold text-lg">Daily Rotation</h3>
-          <p className="text-white/60 text-sm">A new unique logic puzzle is unlocked every 24 hours at midnight IST.</p>
-        </div>
-        <div className="space-y-4 relative z-10">
-          <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mx-auto">
-            <Activity className="text-accent" />
+          <div className="rules-benefits__grid">
+            {ritualBriefs.map((brief) => {
+              const Icon = brief.icon;
+              return (
+                <article
+                  key={brief.title}
+                  className={`rules-benefits__card ${brief.accent}`}
+                >
+                  <div className="rules-benefits__card-header">
+                    <div className="rules-benefits__card-icon">
+                      <Icon size={18} />
+                    </div>
+                    <span className="rules-benefits__card-note">{brief.note}</span>
+                  </div>
+                  <h3>{brief.title}</h3>
+                  <p className="rules-benefits__card-description">{brief.description}</p>
+                  <p className="rules-benefits__card-detail">{brief.detail}</p>
+                </article>
+              );
+            })}
           </div>
-          <h3 className="font-bold text-lg">Analyze & Solve</h3>
-          <p className="text-white/60 text-sm">Decode patterns, solve binary circuits, and identify mathematical sequences.</p>
-        </div>
-        <div className="space-y-4 relative z-10">
-          <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mx-auto">
-            <Zap className="text-amber-400" />
-          </div>
-          <h3 className="font-bold text-lg">Build Your Streak</h3>
-          <p className="text-white/60 text-sm">Solve puzzles daily to maintain your streak and earn a spot on the Elite Leaderboard.</p>
         </div>
       </section>
 
@@ -121,10 +159,6 @@ const Home = ({ secondsToMidnight, user, todayProgress }) => {
     </motion.div>
   );
 };
-
-const Leaderboard = () => (
-  <div className="p-8 text-center"><h2 className="text-2xl font-bold">Global Top 100</h2><p className="text-text-muted mt-4">Coming Soon...</p></div>
-);
 
 function App() {
   const { isInitializing, user, todayProgress, secondsToMidnight } = useGameEngine();
@@ -155,9 +189,24 @@ function App() {
                 />
               } />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/login" element={<LoginPage />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/challenge/hintless-hero" element={<HintlessHeroChallenge />} />
+              <Route path="/challenge/puzzle-master" element={<PuzzleMasterChallenge />} />
+              <Route path="/challenge/streak-keeper" element={<StreakKeeperChallenge />} />
               <Route path="/games" element={<GamesLibrary />} />
               <Route path="/games/:type" element={<PracticeGame />} />
+              <Route path="/challenge" element={<ChallengePage />} />
+              <Route
+                path="/landing"
+                element={
+                  <LandingPage
+                    secondsToMidnight={secondsToMidnight}
+                    user={user}
+                    todayProgress={todayProgress}
+                  />
+                }
+              />
             </Routes>
           </motion.div>
         )}

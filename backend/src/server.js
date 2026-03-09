@@ -14,9 +14,11 @@ app.use(express.json());
 // Routes
 const authRoutes = require('./routes/authRoute');
 const userRoutes = require('./routes/userRoute');
+const scoreRoutes = require('./routes/scoreRoute'); // NEW
 
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/scores', scoreRoutes); // NEW
 
 // Basic Health Check Endpoint
 app.get('/api/health', async (req, res) => {

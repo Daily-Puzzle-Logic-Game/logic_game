@@ -8,4 +8,10 @@ router.post('/google', authController.googleLogin);
 // POST /api/auth/truecaller
 router.post('/truecaller', authController.truecallerLogin);
 
+// POST /api/auth/signup
+router.post('/signup', authController.emailSignup);
+
+// POST /api/auth/login
+router.post('/login', authController.emailLogin);
+
 module.exports = router;

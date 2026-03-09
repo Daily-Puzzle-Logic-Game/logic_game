@@ -10,7 +10,8 @@
 // Available colors (we use simple integers 1-4 to represent distinct CSS colors)
 const COLORS = [1, 2, 3, 4];
 
-export const generatePatternMatch = (seededRandom) => {
+export const generatePatternMatch = (seededRandom, options = {}) => {
+    const difficulty = options.difficulty ?? 2;
     const size = 3;
 
     // Patterns to randomly choose from based on seed
@@ -47,11 +48,19 @@ export const generatePatternMatch = (seededRandom) => {
         }
     }
 
-    // Hide 3 random tiles
+    const hiddenMap = {
+        1: 2,
+        2: 3,
+        3: 4,
+        4: 4
+    };
+    // Harder levels hide more cells to infer from less context.
+    const hiddenTarget = hiddenMap[difficulty] ?? 3;
+
     const puzzle = JSON.parse(JSON.stringify(solution));
     let hiddenCount = 0;
 
-    while (hiddenCount < 3) {
+    while (hiddenCount < hiddenTarget) {
         const r = seededRandom.range(0, size);
         const c = seededRandom.range(0, size);
 

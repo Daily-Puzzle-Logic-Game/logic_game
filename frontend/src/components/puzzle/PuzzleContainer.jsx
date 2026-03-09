@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import CelebrationBurst from '../ui/CelebrationBurst';
+import ParticleField from '../ui/ParticleField';
 import { db } from '../../db/db';
 import { getTodayDateString } from '../../utils/time';
 import { PUZZLE_TYPES, PUZZLE_COMPONENTS } from '../../config/puzzleTypes';
@@ -28,6 +30,8 @@ const PuzzleContainer = ({ user, todayProgress, practiceMode = false, practiceTy
     const [activeState, setActiveState] = useState(null);
     const [statusMsg, setStatusMsg] = useState(null); // { type: 'error' | 'success', text: string }
     const [isLoading, setIsLoading] = useState(true);
+    const [shake, setShake] = useState(false);
+    const [showCelebration, setShowCelebration] = useState(false);
 
     // Hydrate state
     useEffect(() => {
@@ -101,21 +105,50 @@ const PuzzleContainer = ({ user, todayProgress, practiceMode = false, practiceTy
 
         if (result.valid) {
             setStatusMsg({ type: 'success', text: result.message });
+            setShowCelebration(true);
+            setTimeout(() => setShowCelebration(false), 3000);
 
             if (!practiceMode) {
                 const todayStr = getTodayDateString();
-                await db.dailyProgress.update(todayStr, { completed: true });
+                const startedAt = todayProgress?.startedAt || Date.now();
+                const timeTaken = Math.max(1, Math.floor((Date.now() - startedAt) / 1000));
+                const difficulty = todayProgress?.difficultyLevel || 2;
+                const hintsUsed = Math.max(0, 3 - (user?.hintsRemaining ?? 3));
+                const score = Math.max(
+                    10,
+                    Math.round((difficulty * 28) + Math.max(0, 70 - timeTaken * 0.22) - (hintsUsed * 8))
+                );
+
+                await db.dailyProgress.update(todayStr, {
+                    completed: true,
+                    timeTaken,
+                    score
+                });
+
+                await db.dailyActivity.put({
+                    date: todayStr,
+                    solved: true,
+                    score,
+                    timeTaken,
+                    difficulty,
+                    hintsUsed,
+                    synced: false,
+                    updatedAt: Date.now()
+                });
 
                 // Update User Streak
                 const prevStreak = user.streakCount || 0;
                 await db.user.update('local_user', {
                     streakCount: prevStreak + 1,
-                    lastPlayed: todayStr
+                    lastPlayed: todayStr,
+                    totalPoints: (user?.totalPoints || 0) + score
                 });
             }
 
         } else {
             setStatusMsg({ type: 'error', text: result.message });
+            setShake(true);
+            setTimeout(() => setShake(false), 500);
         }
     };
 
@@ -141,7 +174,17 @@ const PuzzleContainer = ({ user, todayProgress, practiceMode = false, practiceTy
     }
 
     return (
-        <div className="flex flex-col items-center w-full max-w-lg mx-auto p-4 md:p-8 bg-surface/50 rounded-2xl shadow-xl mt-8">
+        <motion.div 
+            animate={shake ? { x: [-10, 10, -10, 10, 0] } : {}} 
+            transition={{ duration: 0.4 }}
+            className="flex flex-col items-center w-full max-w-lg mx-auto p-4 md:p-8 bg-surface/50 rounded-2xl shadow-xl mt-8 relative"
+        >
+            {showCelebration && (
+                <div className="absolute inset-0 z-50 pointer-events-none flex items-center justify-center">
+                    <ParticleField />
+                    <CelebrationBurst />
+                </div>
+            )}
 
             <div className="w-full flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold tracking-wider text-text-main flex items-center gap-2">
@@ -251,7 +294,7 @@ const PuzzleContainer = ({ user, todayProgress, practiceMode = false, practiceTy
                     {!practiceMode && todayProgress?.completed ? 'SOLVED' : 'SUBMIT'}
                 </button>
             </div>
-        </div>
+        </motion.div>
     );
 };
 

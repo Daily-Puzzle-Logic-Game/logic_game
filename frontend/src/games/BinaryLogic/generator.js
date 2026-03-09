@@ -1,7 +1,8 @@
 /**
  * Binary Logic (Gate-based puzzles) Generator
  */
-export const generateBinaryLogic = (seededRandom) => {
+export const generateBinaryLogic = (seededRandom, options = {}) => {
+    const difficulty = options.difficulty ?? 2;
     const gates = ['AND', 'OR', 'XOR'];
 
     // Choose two gates for a 3-input circuit: (A gate1 B) gate2 C
@@ -26,7 +27,8 @@ export const generateBinaryLogic = (seededRandom) => {
 
     // Hide one or two inputs
     const puzzle = { a, b, c };
-    const hidden = seededRandom.shuffle(['a', 'b', 'c']).slice(0, seededRandom.range(1, 3));
+    const hiddenSlots = difficulty >= 3 ? 2 : 1;
+    const hidden = seededRandom.shuffle(['a', 'b', 'c']).slice(0, hiddenSlots);
 
     hidden.forEach(key => puzzle[key] = null);
 
