@@ -51,13 +51,24 @@ DATABASE_URL="YOUR_DATABASE_URL"
 GOOGLE_CLIENT_ID="YOUR_GOOGLE_CLIENT_ID"
 GOOGLE_CLIENT_SECRET="YOUR_GOOGLE_CLIENT_SECRET"
 JWT_SECRET="YOUR_JWT_SECRET"
+FRONTEND_URL="http://localhost:5173"
 ```
 
 ### Frontend (`frontend/.env`)
 ```env
 VITE_GOOGLE_CLIENT_ID="YOUR_VITE_GOOGLE_CLIENT_ID"
-VITE_API_URL="http://localhost:3000/api"
+VITE_API_URL="http://localhost:3000"
+VITE_TRUECALLER_PARTNER_KEY="YOUR_TRUECALLER_PARTNER_KEY"
+VITE_TRUECALLER_APP_NAME="Logic Looper"
+VITE_TRUECALLER_PRIVACY_URL="https://yourdomain.com/privacy"
+VITE_TRUECALLER_TERMS_URL="https://yourdomain.com/terms"
 ```
+
+> **Truecaller Setup Notes:**
+> - Register your web app at [Truecaller Verification Console](https://verification-sdk-console.truecaller.com/) to get `VITE_TRUECALLER_PARTNER_KEY`.
+> - Set the **Callback URL** in the console to: `https://yourdomain.com/api/auth/truecaller/callback`
+> - Truecaller 1-tap only works on **Android mobile browsers** where the Truecaller app is installed. Desktop and iOS users are shown a descriptive fallback message.
+> - For local development the callback URL must be publicly reachable (e.g. use [ngrok](https://ngrok.com/) to tunnel `localhost:3000`).
 
 ## 🚀 Getting Started
 1. **Clone the repository**

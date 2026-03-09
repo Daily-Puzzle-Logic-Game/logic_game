@@ -1,28 +1,165 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GoogleLogin } from '@react-oauth/google';
-import { X, Smartphone, Gamepad2 } from 'lucide-react';
+import { X, Smartphone, Loader2, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 import { useDispatch } from 'react-redux';
 import { loginSuccess } from '../../store/slices/authSlice';
 import { db } from '../../db/db';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+// Returns true on Android mobile browsers where Truecaller 1-tap works.
+const isAndroidMobile = () =>
+    typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
+
+// Builds the truecallersdk:// deep link required by the Truecaller Web SDK.
+const buildTruecallerDeepLink = (nonce) => {
+    const partnerKey = import.meta.env.VITE_TRUECALLER_PARTNER_KEY || '';
+    const partnerName = encodeURIComponent(import.meta.env.VITE_TRUECALLER_APP_NAME || 'Logic Looper');
+    const callbackUrl = encodeURIComponent(`${API_URL}/api/auth/truecaller/callback`);
+    const privacyUrl = encodeURIComponent(import.meta.env.VITE_TRUECALLER_PRIVACY_URL || `${window.location.origin}/privacy`);
+    const termsUrl = encodeURIComponent(import.meta.env.VITE_TRUECALLER_TERMS_URL || `${window.location.origin}/terms`);
+
+    return (
+        `truecallersdk://truesdk/web_verify` +
+        `?requestNonce=${nonce}` +
+        `&partnerKey=${partnerKey}` +
+        `&partnerName=${partnerName}` +
+        `&partnerCallbackUrl=${callbackUrl}` +
+        `&lang=en` +
+        `&privacyUrl=${privacyUrl}` +
+        `&termsUrl=${termsUrl}` +
+        `&loginPrefix=use` +
+        `&loginSuffix=continue` +
+        `&ctaPrefix=use` +
+        `&ctaColor=%230052CC` +
+        `&ctaTextColor=%23ffffff` +
+        `&btnShape=round` +
+        `&skipOption=use_another_number`
+    );
+};
+
+const TC_POLL_INTERVAL_MS = 2000;
+const TC_MAX_POLLS = 30; // ~60 seconds
+const TC_INITIAL_POLL_DELAY_MS = 3000; // Allow time for Truecaller app to launch
+
+// Fallback UUID generator for environments without crypto.randomUUID().
+const generateNonce = () => {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0;
+        return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+    });
+};
+
 const LoginModal = ({ isOpen, onClose }) => {
     const dispatch = useDispatch();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [tcStatus, setTcStatus] = useState('idle'); // 'idle' | 'waiting' | 'verifying'
+
+    const pollTimerRef = useRef(null);
+    const pollCountRef = useRef(0);
+    const currentNonceRef = useRef(null);
+
+    // Clean up polling when the modal closes or component unmounts.
+    useEffect(() => {
+        if (!isOpen) {
+            stopPolling();
+            setTcStatus('idle');
+            setError(null);
+        }
+        return () => stopPolling();
+    }, [isOpen]);
+
+    const stopPolling = () => {
+        if (pollTimerRef.current) {
+            clearTimeout(pollTimerRef.current);
+            pollTimerRef.current = null;
+        }
+        pollCountRef.current = 0;
+    };
+
+    const pollForSession = async (nonce) => {
+        if (pollCountRef.current >= TC_MAX_POLLS) {
+            stopPolling();
+            setTcStatus('idle');
+            setIsLoading(false);
+            setError('Truecaller authentication timed out. Please try again.');
+            return;
+        }
+
+        pollCountRef.current += 1;
+
+        try {
+            const response = await axios.get(`${API_URL}/api/auth/truecaller/session/${nonce}`);
+            if (response.data.status === 'complete') {
+                stopPolling();
+                setTcStatus('verifying');
+                const { user, token } = response.data;
+                dispatch(loginSuccess({ user, token }));
+                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                setIsLoading(false);
+                onClose();
+            } else {
+                scheduleNextPoll(nonce);
+            }
+        } catch (err) {
+            if (err.response?.status === 404) {
+                // Session not ready yet — keep polling.
+                scheduleNextPoll(nonce);
+            } else {
+                stopPolling();
+                setTcStatus('idle');
+                setIsLoading(false);
+                setError('Authentication check failed. Please try again.');
+            }
+        }
+    };
+
+    const scheduleNextPoll = (nonce) => {
+        pollTimerRef.current = setTimeout(() => pollForSession(nonce), TC_POLL_INTERVAL_MS);
+    };
+
+    const handleTruecallerClick = () => {
+        setError(null);
+
+        if (!isAndroidMobile()) {
+            setError(
+                'Truecaller 1-tap is only available on Android mobile browsers with the Truecaller app installed. Please use Google Sign-In on this device.'
+            );
+            return;
+        }
+
+        const nonce = generateNonce();
+        currentNonceRef.current = nonce;
+        pollCountRef.current = 0;
+
+        const deepLink = buildTruecallerDeepLink(nonce);
+
+        setIsLoading(true);
+        setTcStatus('waiting');
+
+        // Attempt to open the Truecaller app via the deep link.
+        window.location.href = deepLink;
+
+        // Start polling after a short delay to allow the Truecaller app to open.
+        pollTimerRef.current = setTimeout(() => pollForSession(nonce), TC_INITIAL_POLL_DELAY_MS);
+    };
 
     const handleGoogleSuccess = async (credentialResponse) => {
         setIsLoading(true);
         setError(null);
         try {
-            // Read guest streak directly from IndexedDB (where the game engine stores it)
             const localUser = await db.user.get('local_user');
             const localStreakCount = localUser?.streakCount ?? 0;
             const localLastPlayed = localUser?.lastPlayed ?? null;
 
             const response = await axios.post(
-                `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/google`,
+                `${API_URL}/api/auth/google`,
                 {
                     token: credentialResponse.credential,
                     localData: { streakCount: localStreakCount, lastPlayed: localLastPlayed }
@@ -31,8 +168,6 @@ const LoginModal = ({ isOpen, onClose }) => {
 
             const { user, token } = response.data;
             dispatch(loginSuccess({ user, token }));
-
-            // Set token for future Axios requests
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             onClose();
         } catch (err) {
@@ -44,6 +179,11 @@ const LoginModal = ({ isOpen, onClose }) => {
     };
 
     if (!isOpen) return null;
+
+    const tcButtonLabel =
+        tcStatus === 'waiting' ? 'Waiting for Truecaller…' :
+        tcStatus === 'verifying' ? 'Verifying…' :
+        'Continue with Truecaller';
 
     return (
         <AnimatePresence>
@@ -79,17 +219,19 @@ const LoginModal = ({ isOpen, onClose }) => {
                         </div>
 
                         {error && (
-                            <div className="bg-error/10 border border-error/20 text-error rounded-lg p-3 text-sm">
-                                {error}
+                            <div className="bg-error/10 border border-error/20 text-error rounded-lg p-3 text-sm flex items-start gap-2 text-left">
+                                <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                                <span>{error}</span>
                             </div>
                         )}
 
                         <div className="space-y-4 pt-2">
-                            {/* Google Login Wrapper */}
+                            {/* Google Login */}
                             <div className="flex justify-center w-full [&>div]:w-full">
                                 {isLoading ? (
-                                    <div className="h-10 flex items-center justify-center text-text-muted">
-                                        Authenticating...
+                                    <div className="h-10 flex items-center justify-center text-text-muted gap-2">
+                                        <Loader2 size={16} className="animate-spin" />
+                                        Authenticating…
                                     </div>
                                 ) : (
                                     <GoogleLogin
@@ -113,15 +255,25 @@ const LoginModal = ({ isOpen, onClose }) => {
                                 </div>
                             </div>
 
-                            {/* Truecaller Placeholder */}
+                            {/* Truecaller Login */}
                             <button
-                                className="w-full h-10 bg-[#0052CC] hover:bg-[#0041A3] text-white rounded-full flex items-center justify-center gap-2 font-medium transition-colors disabled:opacity-50"
+                                className="w-full h-10 bg-[#0052CC] hover:bg-[#0041A3] text-white rounded-full flex items-center justify-center gap-2 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 disabled={isLoading}
-                                onClick={() => setError('Truecaller testing requires a valid domain callback. Deployment pending.')}
+                                onClick={handleTruecallerClick}
                             >
-                                <Smartphone size={18} />
-                                Continue with Truecaller
+                                {tcStatus === 'waiting' || tcStatus === 'verifying' ? (
+                                    <Loader2 size={18} className="animate-spin" />
+                                ) : (
+                                    <Smartphone size={18} />
+                                )}
+                                {tcButtonLabel}
                             </button>
+
+                            {!isAndroidMobile() && (
+                                <p className="text-xs text-text-muted">
+                                    Truecaller 1-tap requires Android + Truecaller app.
+                                </p>
+                            )}
                         </div>
 
                         <p className="text-xs text-text-muted pt-4">
