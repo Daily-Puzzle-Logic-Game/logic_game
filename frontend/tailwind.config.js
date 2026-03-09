@@ -10,10 +10,10 @@ export default {
       colors: {
         background: 'rgb(var(--color-bg) / <alpha-value>)',
         surface: 'rgb(var(--color-surface) / <alpha-value>)',
-        primary: 'rgb(var(--color-primary) / <alpha-value>)',
-        secondary: 'rgb(var(--color-secondary) / <alpha-value>)',
-        accent: 'rgb(var(--color-accent) / <alpha-value>)',
-        error: 'rgb(var(--color-error) / <alpha-value>)',
+        primary: '#414BEA',
+        secondary: '#F05537',
+        accent: '#7752FE',
+        error: '#F05537',
         text: {
           main: 'rgb(var(--color-text-main) / <alpha-value>)',
           muted: 'rgb(var(--color-text-muted) / <alpha-value>)',
@@ -24,11 +24,14 @@ export default {
           200: '#DDF2FD',
           300: '#D9E2FF',
           400: '#C2D9FF',
-          900: '#190482',
+          500: '#414BEA',
+          600: '#525CEB',
+          700: '#190482',
+          800: '#222222',
         }
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Poppins', 'Open Sans', 'system-ui', 'sans-serif'],
         mono: ['Fira Code', 'spaceship', 'monospace'],
       },
       animation: {

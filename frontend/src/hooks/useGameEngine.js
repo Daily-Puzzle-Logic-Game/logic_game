@@ -5,6 +5,12 @@ import { db, initializeGuestUser } from '../db/db';
 import { getTodayDateString, getSecondsUntilMidnight, isStreakBroken } from '../utils/time';
 import SeededRandom from '../utils/crypto';
 import { setCurrentPuzzle } from '../store/slices/gameSlice';
+import {
+    calculateAverage,
+    calculateSuccessRate,
+    deriveDifficultyLevel,
+    DEFAULT_DIFFICULTY
+} from '../utils/engagement';
 
 // Game Generators
 import { generateNumberMatrix } from '../games/NumberMatrix/generator';
@@ -33,6 +39,24 @@ export const useGameEngine = () => {
 
                 const todayStr = getTodayDateString();
                 const existingData = await db.user.get('local_user');
+                const recentActivity = await db.dailyActivity.orderBy('date').reverse().limit(30).toArray();
+
+                const solvedRecent = recentActivity.filter((entry) => entry.solved);
+                const averageSolveTime = calculateAverage(solvedRecent, 'timeTaken');
+                const averageHintsUsed = calculateAverage(solvedRecent, 'hintsUsed');
+                const successRate = calculateSuccessRate(recentActivity);
+                const difficultyLevel = deriveDifficultyLevel({
+                    averageSolveTime,
+                    averageHintsUsed,
+                    successRate
+                });
+
+                await db.user.update('local_user', {
+                    averageSolveTime,
+                    averageHintsUsed,
+                    successRate,
+                    difficultyLevel
+                });
 
                 // 1. Manage Streak Logic
                 if (existingData && existingData.lastPlayed) {
@@ -62,21 +86,22 @@ export const useGameEngine = () => {
                     const puzzleType = gameTypes[dayOfWeek];
 
                     let puzzleData;
+                    const generationOptions = { difficulty: difficultyLevel || DEFAULT_DIFFICULTY };
                     switch (puzzleType) {
                         case 'NUMBER_MATRIX':
-                            puzzleData = generateNumberMatrix(rnd);
+                            puzzleData = generateNumberMatrix(rnd, generationOptions);
                             break;
                         case 'PATTERN_MATCH':
-                            puzzleData = generatePatternMatch(rnd);
+                            puzzleData = generatePatternMatch(rnd, generationOptions);
                             break;
                         case 'SEQUENCE_SOLVER':
-                            puzzleData = generateSequenceSolver(rnd);
+                            puzzleData = generateSequenceSolver(rnd, generationOptions);
                             break;
                         case 'DEDUCTION_GRID':
-                            puzzleData = generateDeductionGrid(rnd);
+                            puzzleData = generateDeductionGrid(rnd, generationOptions);
                             break;
                         case 'BINARY_LOGIC':
-                            puzzleData = generateBinaryLogic(rnd);
+                            puzzleData = generateBinaryLogic(rnd, generationOptions);
                             break;
                     }
 
@@ -85,11 +110,41 @@ export const useGameEngine = () => {
                         puzzleType,
                         state: puzzleData,
                         completed: false,
-                        timeTaken: 0
+                        timeTaken: 0,
+                        score: 0,
+                        difficultyLevel,
+                        startedAt: Date.now()
                     });
 
                     // Reset hints on a new day
                     await db.user.update('local_user', { hintsRemaining: 3 });
+                }
+
+                // Ensure every date has a local activity row for offline heatmap rendering.
+                const todayActivity = await db.dailyActivity.get(todayStr);
+                if (!todayActivity) {
+                    const puzzleRecord = await db.dailyProgress.get(todayStr);
+                    await db.dailyActivity.put({
+                        date: todayStr,
+                        solved: Boolean(puzzleRecord?.completed),
+                        score: puzzleRecord?.score || 0,
+                        timeTaken: puzzleRecord?.timeTaken || 0,
+                        difficulty: puzzleRecord?.difficultyLevel || difficultyLevel || DEFAULT_DIFFICULTY,
+                        hintsUsed: 0,
+                        synced: false,
+                        updatedAt: Date.now()
+                    });
+                }
+
+                // Backfill metadata for old records created before engagement fields existed.
+                const staleTodayPuzzle = await db.dailyProgress.get(todayStr);
+                if (staleTodayPuzzle && typeof staleTodayPuzzle.difficultyLevel !== 'number') {
+                    await db.dailyProgress.update(todayStr, {
+                        difficultyLevel: existingData?.difficultyLevel || DEFAULT_DIFFICULTY,
+                        startedAt: staleTodayPuzzle.startedAt || Date.now(),
+                        score: staleTodayPuzzle.score || 0,
+                        timeTaken: staleTodayPuzzle.timeTaken || 0
+                    });
                 }
 
             } catch (err) {

@@ -1,11 +1,13 @@
 /**
  * Sequence Solver (Math / Logical Sequences) Generator
  */
-export const generateSequenceSolver = (seededRandom) => {
+export const generateSequenceSolver = (seededRandom, options = {}) => {
+    const difficulty = options.difficulty ?? 2;
     // 1. Choose a sequence type
-    const sequenceType = seededRandom.range(1, 5);
+    const allowedTypes = difficulty <= 1 ? [1, 2] : difficulty >= 3 ? [1, 2, 3, 4] : [1, 2, 3];
+    const sequenceType = allowedTypes[seededRandom.range(0, allowedTypes.length)];
     let sequence = [];
-    let hiddenIndex = seededRandom.range(2, 5); // Hide an middle/late element
+    let hiddenIndex = difficulty >= 3 ? seededRandom.range(1, 5) : seededRandom.range(2, 5);
     let rule = '';
 
     const start = seededRandom.range(1, 11);

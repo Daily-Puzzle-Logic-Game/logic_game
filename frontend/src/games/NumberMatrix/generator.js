@@ -8,7 +8,8 @@
  *    and then randomly remove numbers to create the puzzle.
  */
 
-export const generateNumberMatrix = (seededRandom) => {
+export const generateNumberMatrix = (seededRandom, options = {}) => {
+    const difficulty = options.difficulty ?? 2;
     const size = 4;
 
     // Step 1: Generate a valid solved 4x4 matrix (Sudoku style rows/cols unique)
@@ -37,11 +38,18 @@ export const generateNumberMatrix = (seededRandom) => {
     );
 
     // Step 2: Create the 'puzzle' by removing cells.
-    // We'll remove ~50% of the cells (8 cells in a 4x4)
+    const removalMap = {
+        1: 6,
+        2: 8,
+        3: 10,
+        4: 11
+    };
+    // Harder levels remove more clues from the board.
+    const targetRemoval = removalMap[difficulty] ?? 8;
     const puzzle = JSON.parse(JSON.stringify(mappedSolution));
     let removedCount = 0;
 
-    while (removedCount < 8) {
+    while (removedCount < targetRemoval) {
         const r = seededRandom.range(0, size);
         const c = seededRandom.range(0, size);
 
