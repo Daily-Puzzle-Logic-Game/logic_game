@@ -1,40 +1,41 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { playSound } from '../../utils/SoundManager';
+import { Sparkles } from 'lucide-react';
 
 const SequenceSolverComponent = ({ puzzleState, onUpdate, isReadOnly }) => {
-    // puzzleState shape: { sequence: [1, 2, null, 4], solution: 3, index: 2 }
     const { sequence, index } = puzzleState;
     const [userValue, setUserValue] = useState(sequence[index] !== null ? sequence[index] : '');
 
     const handleChange = (e) => {
         if (isReadOnly) return;
+        playSound('bubble_pop');
         const val = e.target.value;
         setUserValue(val);
-
-        // Update the state so the validator can see it
         const newSequence = [...sequence];
         newSequence[index] = val;
         onUpdate({ ...puzzleState, sequence: newSequence });
     };
 
     return (
-        <div className="flex flex-col items-center gap-8 py-4">
-            <h3 className="text-lg font-semibold text-text-muted uppercase tracking-widest">
-                Discover the hidden rule
-            </h3>
-
-            <div className="flex flex-wrap justify-center gap-3">
+        <div className="flex flex-col items-center gap-10 py-6">
+            <div className="flex flex-wrap justify-center gap-4 p-8 bg-zinc-900/60 rounded-[3rem] border border-white/5 shadow-[0_30px_60px_rgba(0,0,0,0.7)] relative overflow-hidden group">
+                {/* Rule Background Glow */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent pointer-events-none" />
+                
                 {sequence.map((num, i) => (
                     <motion.div
                         key={i}
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: i * 0.1 }}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        whileHover={{ scale: 1.05, y: -5 }}
+                        onMouseEnter={() => playSound('hover')}
+                        transition={{ delay: i * 0.1, type: 'spring', stiffness: 300 }}
                         className={`
-                            w-16 h-16 md:w-20 md:h-20 flex items-center justify-center rounded-2xl text-2xl font-bold shadow-lg border
+                            w-16 h-16 md:w-24 md:h-24 flex items-center justify-center rounded-[2rem] text-3xl font-black shadow-2xl transition-all duration-300 border-2
                             ${i === index
-                                ? 'bg-primary/20 border-primary ring-2 ring-primary/50'
-                                : 'bg-surface border-surface/50 text-text-main'
+                                ? 'bg-cyan/10 border-cyan shadow-[0_0_30px_rgba(34,211,238,0.3)] z-10 scale-110'
+                                : 'bg-white/5 border-white/5 text-white/80'
                             }
                         `}
                     >
@@ -45,20 +46,23 @@ const SequenceSolverComponent = ({ puzzleState, onUpdate, isReadOnly }) => {
                                 onChange={handleChange}
                                 disabled={isReadOnly}
                                 placeholder="?"
-                                className="w-full h-full bg-transparent text-center outline-none text-primary placeholder:text-primary/40"
+                                className={`w-full h-full bg-transparent text-center outline-none text-cyan placeholder:text-cyan/20 ${!isReadOnly ? 'animate-pulse' : ''}`}
                                 autoFocus
                             />
                         ) : (
-                            <span>{num}</span>
+                            <span className="text-shadow-glow">{num}</span>
                         )}
                     </motion.div>
                 ))}
             </div>
 
             {!isReadOnly && (
-                <p className="text-text-muted text-sm max-w-xs text-center">
-                    Type the missing number in the highlighted box to complete the sequence.
-                </p>
+                <div className="flex flex-col items-center gap-2">
+                    <div className="flex items-center gap-2 px-6 py-2 bg-white/5 rounded-full border border-white/10 backdrop-blur-md">
+                        <Sparkles size={14} className="text-gold animate-spin" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-white/60">Identify Simulation Rule</span>
+                    </div>
+                </div>
             )}
         </div>
     );

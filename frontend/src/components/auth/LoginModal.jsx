@@ -5,8 +5,6 @@ import { X, Smartphone, Gamepad2 } from 'lucide-react';
 import axios from 'axios';
 import { useDispatch } from 'react-redux';
 import { loginSuccess } from '../../store/slices/authSlice';
-import { db } from '../../db/db';
-
 const LoginModal = ({ isOpen, onClose }) => {
     const dispatch = useDispatch();
     const [isLoading, setIsLoading] = useState(false);
@@ -16,16 +14,11 @@ const LoginModal = ({ isOpen, onClose }) => {
         setIsLoading(true);
         setError(null);
         try {
-            // Read guest streak directly from IndexedDB (where the game engine stores it)
-            const localUser = await db.user.get('local_user');
-            const localStreakCount = localUser?.streakCount ?? 0;
-            const localLastPlayed = localUser?.lastPlayed ?? null;
-
             const response = await axios.post(
                 `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/google`,
                 {
                     token: credentialResponse.credential,
-                    localData: { streakCount: localStreakCount, lastPlayed: localLastPlayed }
+                    localData: { streakCount: 0, lastPlayed: null }
                 }
             );
 

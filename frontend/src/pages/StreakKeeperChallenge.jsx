@@ -1,84 +1,53 @@
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Flame, Trophy, Calendar, CheckCircle, Lock, Award } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { db } from '../db/db';
-import { getTodayDateString } from '../utils/time';
+import { useGameEngine } from '../hooks/useGameEngine';
 
 const StreakKeeperChallenge = () => {
     const navigate = useNavigate();
-    const { user } = useSelector((state) => state.auth);
-    const [streakData, setStreakData] = useState({
-        currentStreak: 0,
-        longestStreak: 0,
-        lastPlayed: null,
-        completedDays: []
-    });
+    const { user: authUser } = useSelector((state) => state.auth);
+    const { user: backendUser, activity, achievements } = useGameEngine();
+
     const [badgeEarned, setBadgeEarned] = useState(false);
     const [showCompletion, setShowCompletion] = useState(false);
 
-    // Load streak data
+    // Activity is returned as an array of DailyScore records with { date: "YYYY-MM-DD" }
+    const completedDays = activity?.map(a => a.date) || [];
+    const currentStreak = backendUser?.streakCount || 0;
+
     useEffect(() => {
-        const loadStreakData = async () => {
-            const userData = await db.user.get('local_user');
-            const streakBadge = await db.achievements.get('streak_keeper');
-            
-            // Get all completed daily puzzles
-            const allProgress = await db.dailyProgress.toArray();
-            const completedDates = allProgress
-                .filter(p => p.completed && p.date !== 'puzzle_master_challenge' && p.date !== 'hintless_hero_challenge')
-                .map(p => p.date)
-                .sort();
+        const streakBadge = achievements?.find(a => a.id === 'streak_keeper');
 
-            // Calculate current streak
-            const today = getTodayDateString();
-            let currentStreak = 0;
-            let checkDate = new Date();
-            
-            // Check backwards from today
-            while (true) {
-                const dateStr = checkDate.toISOString().split('T')[0];
-                if (completedDates.includes(dateStr)) {
-                    currentStreak++;
-                    checkDate.setDate(checkDate.getDate() - 1);
-                } else if (dateStr === today && !completedDates.includes(today)) {
-                    // Today not played yet, check yesterday
-                    checkDate.setDate(checkDate.getDate() - 1);
-                } else {
-                    break;
-                }
-            }
+        if (streakBadge) {
+            setBadgeEarned(true);
+        }
 
-            setStreakData({
-                currentStreak: userData?.streakCount || currentStreak,
-                longestStreak: userData?.streakCount || currentStreak,
-                lastPlayed: userData?.lastPlayed,
-                completedDays: completedDates
-            });
-
-            if (streakBadge) {
-                setBadgeEarned(true);
-            }
-
-            // Check if 30-day streak achieved
-            if (currentStreak >= 30 && !streakBadge) {
-                await awardBadge();
-                setShowCompletion(true);
-            }
-        };
-
-        loadStreakData();
-    }, []);
+        // Check if 30-day streak achieved
+        if (currentStreak >= 30 && !streakBadge) {
+            awardBadge();
+            setShowCompletion(true);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentStreak, achievements]);
 
     const awardBadge = async () => {
-        await db.achievements.add({
-            id: 'streak_keeper',
-            name: 'Streak Keeper',
-            description: 'Maintained a 30-day solving streak',
-            icon: 'flame',
-            earnedAt: new Date().toISOString()
-        });
+        try {
+            const token = localStorage.getItem('token');
+            if (token) {
+                const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+                await axios.post(`${API_URL}/api/user/achievement`, {
+                    badgeType: 'streak_keeper',
+                    title: 'Milestone 7 Achieved',
+                    message: 'Streak Keeper status confirmed. 30-day logic pulse maintained.'
+                }, { headers: { Authorization: `Bearer ${token}` } });
+            }
+        } catch (err) {
+            console.error('Achievement Sync Error:', err);
+        }
+
         setBadgeEarned(true);
     };
 
@@ -86,25 +55,25 @@ const StreakKeeperChallenge = () => {
     const generateCalendar = () => {
         const days = [];
         const today = new Date();
-        
+
         for (let i = 29; i >= 0; i--) {
             const date = new Date(today);
             date.setDate(date.getDate() - i);
             const dateStr = date.toISOString().split('T')[0];
-            
+
             days.push({
                 date: dateStr,
                 dayNum: 30 - i,
-                isCompleted: streakData.completedDays.includes(dateStr),
+                isCompleted: completedDays.includes(dateStr),
                 isToday: i === 0
             });
         }
-        
+
         return days;
     };
 
     const calendarDays = generateCalendar();
-    const progress = Math.min((streakData.currentStreak / 30) * 100, 100);
+    const progress = Math.min((currentStreak / 30) * 100, 100);
 
     if (showCompletion) {
         return (
@@ -183,7 +152,7 @@ const StreakKeeperChallenge = () => {
                 <div className="flex items-center justify-between mb-4">
                     <div>
                         <p className="text-sm text-text-muted">Current Streak</p>
-                        <p className="text-4xl font-black text-brand-900">{streakData.currentStreak} <span className="text-lg text-text-muted font-normal">/ 30 days</span></p>
+                        <p className="text-4xl font-black text-brand-900">{currentStreak} <span className="text-lg text-text-muted font-normal">/ 30 days</span></p>
                     </div>
                     <div className="text-right">
                         <p className="text-sm text-text-muted">Progress</p>
@@ -206,7 +175,7 @@ const StreakKeeperChallenge = () => {
                     <Calendar className="text-primary" />
                     30-Day Journey
                 </h3>
-                
+
                 <div className="grid grid-cols-6 sm:grid-cols-10 gap-3">
                     {calendarDays.map((day) => (
                         <motion.div
@@ -216,8 +185,8 @@ const StreakKeeperChallenge = () => {
                             transition={{ delay: day.dayNum * 0.02 }}
                             className={`
                                 aspect-square rounded-xl flex flex-col items-center justify-center text-xs font-bold
-                                ${day.isCompleted 
-                                    ? 'bg-orange-100 text-orange-700 border-2 border-orange-300' 
+                                ${day.isCompleted
+                                    ? 'bg-orange-100 text-orange-700 border-2 border-orange-300'
                                     : day.isToday
                                         ? 'bg-primary/10 text-primary border-2 border-primary border-dashed'
                                         : 'bg-gray-100 text-gray-400'
@@ -281,7 +250,7 @@ const StreakKeeperChallenge = () => {
                     onClick={() => navigate('/')}
                     className="px-8 py-4 bg-primary text-white rounded-xl font-bold shadow-lg hover:scale-105 transition-transform"
                 >
-                    {streakData.currentStreak > 0 ? 'Continue Your Streak' : 'Start Your Streak'}
+                    {currentStreak > 0 ? 'Continue Your Streak' : 'Start Your Streak'}
                 </button>
             </div>
         </motion.div>

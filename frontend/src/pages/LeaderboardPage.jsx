@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Calendar, Medal } from 'lucide-react';
 import MainLayout from '../components/layout/MainLayout';
@@ -12,10 +12,10 @@ export default function LeaderboardPage() {
         const fetchLeaderboard = async () => {
             setLoading(true);
             try {
-                let url = 'http://localhost:3000/api/scores/leaderboard';
+                let url = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/scores/leaderboard`;
                 if (filter === 'daily') {
                     const today = new Date().toISOString().split('T')[0];
-                    url += ?date=;
+                    url += `?date=${today}`;
                 }
                 const response = await fetch(url);
                 if (response.ok) {
@@ -43,13 +43,13 @@ export default function LeaderboardPage() {
                     <div className="flex bg-surface rounded-xl p-1 border border-border">
                         <button
                             onClick={() => setFilter('all-time')}
-                            className={px-4 py-2 rounded-lg text-sm font-bold transition-colors }
+                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${filter === 'all-time' ? 'bg-primary text-white shadow-lg' : 'text-text-muted hover:bg-surface/50'}`}
                         >
                             <Trophy size={16} className="inline mr-2" /> Global
                         </button>
                         <button
                             onClick={() => setFilter('daily')}
-                            className={px-4 py-2 rounded-lg text-sm font-bold transition-colors }
+                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${filter === 'daily' ? 'bg-primary text-white shadow-lg' : 'text-text-muted hover:bg-surface/50'}`}
                         >
                             <Calendar size={16} className="inline mr-2" /> Today
                         </button>
@@ -96,7 +96,7 @@ export default function LeaderboardPage() {
                                             className="hover:bg-surface/50 transition-colors"
                                         >
                                             <td className="py-4 px-6">
-                                                <div className={w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm }>
+                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${index === 0 ? 'bg-secondary text-surface' : index === 1 ? 'bg-slate-300 text-surface' : index === 2 ? 'bg-amber-600 text-surface' : 'bg-surface/50 text-text-muted'}`}>
                                                     #{entry.rank}
                                                 </div>
                                             </td>

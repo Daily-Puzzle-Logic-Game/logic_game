@@ -1,0 +1,134 @@
+/* Heatmap Styles */
+.heatmap-container {
+    @apply w-full overflow-x-auto py-2;
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.primary') transparent;
+    display: flex;
+    flex-direction: column;
+}
+
+.heatmap-grid-wrapper {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+}
+
+.heatmap-day-labels {
+    display: grid;
+    grid-template-rows: repeat(7, 1fr);
+    gap: 3px;
+    padding-top: 20px;
+    /* Offset for month labels */
+}
+
+.heatmap-grid-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.heatmap-month-labels {
+    display: flex;
+    font-size: 9px;
+    color: #7d8590;
+    height: 15px;
+    align-items: center;
+}
+
+.heatmap-grid {
+    display: flex;
+    gap: 3px;
+    min-width: max-content;
+}
+
+.heatmap-cell {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    transition: background-color 0.1s;
+    outline: 1px solid rgba(27, 31, 35, 0.06);
+    outline-offset: -1px;
+}
+
+/* GitHub Intensity Palette (Dark Mode preferred) */
+.intensity-0 {
+    background-color: #161b22;
+}
+
+.intensity-1 {
+    background-color: #0e4429;
+}
+
+.intensity-2 {
+    background-color: #006d32;
+}
+
+.intensity-3 {
+    background-color: #26a641;
+}
+
+.intensity-4 {
+    background-color: #39d353;
+}
+
+/* Light Mode Fallback */
+:root:not(.dark) .intensity-0 {
+    background-color: #ebedf0;
+}
+
+:root:not(.dark) .intensity-1 {
+    background-color: #9be9a8;
+}
+
+:root:not(.dark) .intensity-2 {
+    background-color: #40c463;
+}
+
+:root:not(.dark) .intensity-3 {
+    background-color: #30a14e;
+}
+
+:root:not(.dark) .intensity-4 {
+    background-color: #216e39;
+}
+
+/* Labels & Footer */
+.heatmap-label {
+    font-size: 10px;
+    color: #7d8590;
+    line-height: 11px;
+}
+
+.heatmap-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    padding: 0 4px;
+}
+
+.heatmap-footer-link {
+    color: #7d8590;
+    font-size: 11px;
+    text-decoration: none;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+.heatmap-footer-link:hover {
+    color: #2f81f7;
+    text-decoration: underline;
+}
+
+.heatmap-legend {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #7d8590;
+}
+
+.legend-box {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+}

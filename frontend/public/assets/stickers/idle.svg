@@ -1,0 +1,26 @@
+<svg width="240" height="240" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Body/Outfit -->
+  <path d="M70 200C70 180 80 160 100 150H140C160 160 170 180 170 200" stroke="#3B82F6" stroke-width="8" stroke-linecap="round"/>
+  <path d="M90 150C90 130 100 120 120 120C140 120 150 130 150 150" fill="#1E293B"/>
+  
+  <!-- Head -->
+  <circle cx="120" cy="90" r="40" fill="#FDE6D2" stroke="#3B82F6" stroke-width="4"/>
+  
+  <!-- Hair (Blue/Purple Tech Style) -->
+  <path d="M85 80C80 60 100 40 120 40C140 40 160 60 155 80C165 90 165 110 150 120C140 115 130 110 120 110C110 110 100 115 90 120C75 110 75 90 85 80Z" fill="#3B82F6"/>
+  <path d="M100 45C110 35 130 35 140 45" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+  
+  <!-- Tech Visor -->
+  <rect x="95" y="80" width="50" height="15" rx="4" fill="rgba(34, 211, 238, 0.4)" stroke="#22D3EE" stroke-width="2"/>
+  <circle cx="102" cy="87.5" r="2" fill="white" animate="pulse">
+     <animate attributeName="opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite" />
+  </circle>
+  
+  <!-- Floating Tech Elements -->
+  <circle cx="60" cy="100" r="6" fill="#22D3EE" opacity="0.6">
+     <animateTransform attributeName="transform" type="translate" values="0,0; 0,10; 0,0" dur="4s" repeatCount="indefinite" />
+  </circle>
+  <rect x="180" y="80" width="12" height="12" rx="2" fill="#8B5CF6" opacity="0.6">
+     <animateTransform attributeName="transform" type="translate" values="0,0; 0,-15; 0,0" dur="5s" repeatCount="indefinite" />
+  </rect>
+</svg>

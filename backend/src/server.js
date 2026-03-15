@@ -1,10 +1,9 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('./config/prisma');
 
 const app = express();
-const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
@@ -14,16 +13,17 @@ app.use(express.json());
 // Routes
 const authRoutes = require('./routes/authRoute');
 const userRoutes = require('./routes/userRoute');
-const scoreRoutes = require('./routes/scoreRoute'); // NEW
+const scoreRoutes = require('./routes/scoreRoute');
+const notificationRoutes = require('./routes/notificationRoute');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
-app.use('/api/scores', scoreRoutes); // NEW
+app.use('/api/scores', scoreRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Basic Health Check Endpoint
 app.get('/api/health', async (req, res) => {
     try {
-        // Optional: simple DB ping to ensure connection
         await prisma.$queryRaw`SELECT 1`;
         res.status(200).json({ status: 'OK', database: 'Connected', timestamp: new Date() });
     } catch (error) {

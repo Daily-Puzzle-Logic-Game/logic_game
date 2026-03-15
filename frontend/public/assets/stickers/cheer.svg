@@ -1,0 +1,18 @@
+<svg width="240" height="240" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Body -->
+  <path d="M70 200C70 180 80 160 100 150H140C160 160 170 180 170 200" stroke="#10B981" stroke-width="8" stroke-linecap="round"/>
+  
+  <!-- Raised Arms -->
+  <path d="M85 155L50 120" stroke="#10B981" stroke-width="8" stroke-linecap="round"/>
+  <path d="M155 155L190 120" stroke="#10B981" stroke-width="8" stroke-linecap="round"/>
+  
+  <!-- Head -->
+  <circle cx="120" cy="90" r="40" fill="#FDE6D2" stroke="#10B981" stroke-width="4"/>
+  <path d="M85 80C80 60 100 40 120 40C140 40 160 60 155 80C165 90 165 110 150 120C140 115 130 110 120 110C110 110 100 115 90 120C75 110 75 90 85 80Z" fill="#10B981"/>
+  
+  <!-- Visor -->
+  <rect x="95" y="80" width="50" height="15" rx="4" fill="rgba(16, 185, 129, 0.4)" stroke="#10B981" stroke-width="2"/>
+  
+  <!-- Celebration Sparks -->
+  <path d="M40 80L50 90M190 80L200 90M120 20L120 35" stroke="#FBBF24" stroke-width="4" stroke-linecap="round"/>
+</svg>

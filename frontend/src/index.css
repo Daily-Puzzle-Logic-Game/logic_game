@@ -1,40 +1,126 @@
-@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Poppins:wght@400;500;600;700&display=swap');
-
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+@keyframes float-sticker {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+  100% { transform: translateY(0px); }
+}
+
+.floating-sticker {
+  animation: float-sticker 3s ease-in-out infinite;
+  pointer-events: none;
+  user-select: none;
+}
+
 @layer base {
   :root {
-    --color-bg: 246 245 245;
-    --color-surface: 255 255 255;
-    --color-primary: 65 75 234;
-    --color-secondary: 240 85 55;
-    --color-accent: 119 82 254;
-    --color-error: 240 85 55;
-    --color-text-main: 34 34 34;
-    --color-text-muted: 61 59 64;
-  }
-
-  .dark {
-    --color-bg: 17 18 33;
-    --color-surface: 24 26 54;
-    --color-text-main: 248 237 255;
-    --color-text-muted: 191 207 231;
+    --color-bg: 5 5 7;
+    --color-surface: 12 12 16;
+    --color-primary: 59 130 246;
+    --color-secondary: 52 211 153;
+    --color-accent: 167 139 250;
+    --color-text-main: 244 244 245;
+    --color-text-muted: 113 113 122;
+    --industrial-border: rgba(255, 255, 255, 0.08);
   }
 
   body {
-    font-family: 'Poppins', 'Open Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Poppins', 'Inter', system-ui, -apple-system, sans-serif;
     color: rgb(var(--color-text-main));
     min-height: 100vh;
     margin: 0;
-    background: radial-gradient(circle at top left, rgba(248, 237, 255, 0.5), transparent 40%),
-      linear-gradient(180deg, #F6F5F5 0%, #FFFFFF 60%, #F6F5F5 100%);
+    background-color: transparent;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   .dark body {
-    background: radial-gradient(circle at top right, rgba(119, 82, 254, 0.4), transparent 40%),
-      linear-gradient(180deg, rgba(10, 12, 30, 0.95), rgba(17, 18, 33, 1));
+    background-color: transparent;
+  }
+
+  /* Industrial Utilities */
+  .glass-industrial {
+    background: rgba(18, 18, 22, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--industrial-border);
+  }
+
+  /* Gaming UI Utilities */
+  .text-shadow-glow {
+    text-shadow: 0 0 10px currentColor;
+  }
+
+  .bg-board-gradient {
+    background: radial-gradient(circle at center, rgba(79, 70, 229, 0.1) 0%, transparent 70%);
+  }
+
+  .glass-hud {
+    background: rgba(15, 12, 41, 0.6);
+    backdrop-filter: blur(16px);
+    border-bottom: 2px solid rgba(34, 211, 238, 0.3);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(34, 211, 238, 0.05);
+  }
+
+  .btn-game-primary {
+    background: linear-gradient(135deg, #4F46E5, #9333EA);
+    box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4), inset 0 2px 5px rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .btn-game-primary:hover {
+    filter: brightness(1.2);
+    box-shadow: 0 6px 20px rgba(79, 70, 229, 0.6), inset 0 2px 5px rgba(255, 255, 255, 0.3);
+  }
+
+  .tile-gaming-idle {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+  }
+
+  .text-glow-blue {
+    text-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+  }
+
+  .scanline-overlay {
+    background: linear-gradient(to bottom,
+        transparent 50%,
+        rgba(0, 0, 0, 0.05) 51%,
+        transparent 51%);
+    background-size: 100% 4px;
+    pointer-events: none;
+    z-index: 50;
+  }
+
+  .industrial-grid {
+    background-image:
+      linear-gradient(rgba(34, 211, 238, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(34, 211, 238, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+    animation: grid-pulse 8s ease-in-out infinite;
+  }
+
+  @keyframes grid-pulse {
+    0%, 100% { opacity: 0.1; }
+    50% { opacity: 0.3; }
+  }
+
+  .industrial-grid-sub {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 10px 10px;
+  }
+
+  /* Fintech Neural Specifics */
+  .neural-path-glow {
+    filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.6));
+  }
+
+  .reward-splash-container {
+    background: radial-gradient(circle at center, rgba(37, 99, 235, 0.4) 0%, transparent 80%);
   }
 
   * {
@@ -42,7 +128,7 @@
   }
 
   ::selection {
-    background: rgba(65, 75, 234, 0.6);
+    background: rgba(34, 211, 238, 0.6);
     color: #fff;
   }
 }

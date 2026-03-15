@@ -1,11 +1,13 @@
+import { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+
 import MainLayout from './components/layout/MainLayout';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, Puzzle, Zap } from 'lucide-react';
 import { useGameEngine } from './hooks/useGameEngine';
 import { formatTime } from './utils/time';
 import PuzzleContainer from './components/puzzle/PuzzleContainer';
-import Profile from './pages/Profile';
+import ProfileCenter from './pages/ProfileCenter';
 import GamesLibrary from './pages/GamesLibrary';
 import PracticeGame from './pages/PracticeGame';
 import ChallengePage from './pages/ChallengePage';
@@ -15,156 +17,63 @@ import Leaderboard from './pages/Leaderboard';
 import HintlessHeroChallenge from './pages/HintlessHeroChallenge';
 import PuzzleMasterChallenge from './pages/PuzzleMasterChallenge';
 import StreakKeeperChallenge from './pages/StreakKeeperChallenge';
+import DailyRewardModal from './components/rewards/DailyRewardModal';
+import StreakShieldPopup from './components/rewards/StreakShieldPopup';
+// Achievements.jsx removed
+import AchievementToast from './components/ui/AchievementToast';
+import AchievementCelebration from './components/rewards/AchievementCelebration';
+import AmbientBackground from './components/ui/AmbientBackground';
+import { clearLastUnlocked } from './store/slices/achievementSlice';
+import { useDispatch, useSelector } from 'react-redux';
 import './App.css';
 
-const Home = ({ secondsToMidnight, user, todayProgress }) => {
-  const navigate = useNavigate();
-  const ritualBriefs = [
-    {
-      title: 'Daily Rotation',
-      note: '24H cadence',
-      description: 'A new unique logic puzzle is unlocked every 24 hours at midnight IST.',
-      detail: 'A steady cadence keeps your focus calibrated from one reset to the next.',
-      icon: Puzzle,
-      accent: 'rules-benefits__card--sky'
-    },
-    {
-      title: 'Analyze & Solve',
-      note: 'Pattern workouts',
-      description: 'Decode patterns, solve binary circuits, and identify mathematical sequences.',
-      detail: 'Layered hints, proof-backed breakdowns, and micro-metrics keep you in the flow state.',
-      icon: Activity,
-      accent: 'rules-benefits__card--violet'
-    },
-    {
-      title: 'Build Your Streak',
-      note: 'Momentum lift',
-      description: 'Solve puzzles daily to maintain your streak and earn a spot on the Elite Leaderboard.',
-      detail: 'Earn tiered badges and streak rewards that make each consecutive win feel meaningful.',
-      icon: Zap,
-      accent: 'rules-benefits__card--amber'
-    }
-  ];
 
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="flex flex-col gap-16 pb-20"
-    >
-      {/* Hero Section */}
-      <section className="home-hero relative text-center bg-report rounded-[3.5rem] pt-12 pb-16 px-6 md:px-10 shadow-2xl overflow-hidden">
-        <div className="home-hero__badge">
-          <Activity size={16} />
-          <span>The Future of Logical Thinking</span>
-        </div>
-        <h1 className="home-hero__title">
-          Master Your Mind with <span>Bluestock Logic</span>
-        </h1>
-        <p className="home-hero__subtitle">
-          Thousands of traders sharpen daily intuition, solve complex logic circuits, and climb a leaderboard built for premium thinkers.
-        </p>
-        <div className="home-hero__actions">
-          <button
-            onClick={() => document.getElementById('daily-challenge').scrollIntoView({ behavior: 'smooth' })}
-            className="home-hero__cta"
-          >
-            Play Daily Puzzle
-          </button>
-          <button
-            onClick={() => navigate('/games')}
-            className="home-hero__ghost"
-          >
-            Explore All Games
-          </button>
-        </div>
-        <div className="home-hero__panel">
-          <p className="home-hero__panel-label">Spotlight ritual</p>
-          <p className="home-hero__panel-title">Daily logic reset</p>
-          <p className="home-hero__panel-meta">New challenge lands nightly at midnight</p>
-        </div>
-        <div className="home-hero__orb home-hero__orb--one" aria-hidden />
-        <div className="home-hero__orb home-hero__orb--two" aria-hidden />
-      </section>
-
-      {/* Main Feature: Daily Challenge */}
-      <section id="daily-challenge" className="px-4">
-        <div className="max-w-3xl mx-auto">
-          <div className="flex justify-between items-end mb-8 px-2">
-            <div>
-              <h2 className="text-2xl font-black text-brand-900">Today's Challenge</h2>
-              <p className="text-text-muted text-sm capitalize">
-                Streak: <span className="text-primary font-bold">{user ? user.streakCount : 0} 🔥</span>
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-[10px] uppercase font-bold text-text-muted tracking-widest mb-1">Time Remaining</p>
-              <p className="font-mono text-xl text-brand-900 dark:text-brand-100 font-bold bg-brand-200 dark:bg-brand-800/50 px-3 py-1 rounded-lg">
-                {formatTime(secondsToMidnight)}
-              </p>
-            </div>
-          </div>
-
-          <PuzzleContainer user={user} todayProgress={todayProgress} />
-        </div>
-      </section>
-
-      <section
-        className="rules-benefits"
-        aria-labelledby="rules-benefits-title"
-      >
-        <div className="rules-benefits__surface">
-          <div className="rules-benefits__glow" aria-hidden />
-          <div className="rules-benefits__header">
-            <p className="rules-benefits__tag">Rules & Benefits</p>
-            <h2 id="rules-benefits-title">Daily rituals that sharpen your logic</h2>
-            <p className="rules-benefits__lead">
-              Micro-rituals, layered analytics, and ceremonial resets make each session feel intentional. The Ritual Flow keeps you engaged, accountable, and ready for the next challenge.
-            </p>
-          </div>
-          <div className="rules-benefits__grid">
-            {ritualBriefs.map((brief) => {
-              const Icon = brief.icon;
-              return (
-                <article
-                  key={brief.title}
-                  className={`rules-benefits__card ${brief.accent}`}
-                >
-                  <div className="rules-benefits__card-header">
-                    <div className="rules-benefits__card-icon">
-                      <Icon size={18} />
-                    </div>
-                    <span className="rules-benefits__card-note">{brief.note}</span>
-                  </div>
-                  <h3>{brief.title}</h3>
-                  <p className="rules-benefits__card-description">{brief.description}</p>
-                  <p className="rules-benefits__card-detail">{brief.detail}</p>
-                </article>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Footer Branding */}
-      <footer className="text-center py-8">
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <img src="/logo.jpg" alt="Bluestock Logo" className="h-6 opacity-50 grayscale hover:grayscale-0 transition-all" />
-          <span className="text-text-muted font-bold tracking-tighter text-lg">BLUESTOCK</span>
-        </div>
-        <p className="text-text-muted text-[10px] uppercase tracking-[0.2em] font-medium">
-          © 2026 Bluestock Fintech • Master your logic
-        </p>
-      </footer>
-    </motion.div>
-  );
-};
+import JourneyMap from './pages/JourneyMap';
+import JourneyGame from './pages/JourneyGame';
 
 function App() {
-  const { isInitializing, user, todayProgress, secondsToMidnight } = useGameEngine();
+  const dispatch = useDispatch();
+  const { isInitializing, user, secondsToMidnight } = useGameEngine();
+  const currentPuzzle = useSelector((state) => state.game.currentPuzzle);
+  const lastUnlocked = useSelector((state) => state.achievements.lastUnlocked);
+  
+  const [showDailyReward, setShowDailyReward] = useState(false);
+  const [showStreakShield, setShowStreakShield] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+
+  useEffect(() => {
+    if (lastUnlocked) {
+      // Show full celebration for ANY achievement unlock for the "wow" factor with anime girl
+      setShowCelebration(true);
+      setShowToast(false);
+    }
+  }, [lastUnlocked]);
+  const location = useLocation();
+
+  useEffect(() => {
+
+    if (!isInitializing && user) {
+      // 1. Check Daily Reward
+      const lastClaim = localStorage.getItem('lastRewardClaim');
+      const todayStr = new Date().toISOString().split('T')[0];
+      if (lastClaim !== todayStr) {
+        setTimeout(() => setShowDailyReward(true), 1000);
+      }
+
+      // 2. Check Streak Shield (If user has shields and streak is at risk)
+      // For now, let's assume simple shield check if streak is broken
+      // This logic will be fleshed out as we implement streak shield persistence
+      const streakBroken = localStorage.getItem('streak_at_risk') === 'true';
+      if (streakBroken) {
+        setShowStreakShield(true);
+      }
+    }
+  }, [isInitializing, user]);
 
   return (
     <MainLayout>
+      <AmbientBackground />
       <AnimatePresence mode="wait">
         {isInitializing ? (
           <motion.div
@@ -176,34 +85,43 @@ function App() {
           </motion.div>
         ) : (
           <motion.div
-            key="content"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            key={location.pathname}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
           >
-            <Routes>
+            <Routes location={location} key={location.pathname}>
+
               <Route path="/" element={
-                <Home
+                <LandingPage
                   secondsToMidnight={secondsToMidnight}
                   user={user}
-                  todayProgress={todayProgress}
+                  todayProgress={currentPuzzle}
+                  triggerSync={() => window.location.reload()}
                 />
               } />
-              <Route path="/profile" element={<Profile />} />
+              <Route path="/profile" element={<ProfileCenter />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/achievements" element={<ProfileCenter />} />
               <Route path="/challenge/hintless-hero" element={<HintlessHeroChallenge />} />
-              <Route path="/challenge/puzzle-master" element={<PuzzleMasterChallenge />} />
+
+               <Route path="/journey" element={<JourneyMap />} />
+               <Route path="/play/journey/:level" element={<JourneyGame />} />
+               <Route path="/challenge/puzzle-master" element={<PuzzleMasterChallenge />} />
               <Route path="/challenge/streak-keeper" element={<StreakKeeperChallenge />} />
               <Route path="/games" element={<GamesLibrary />} />
-              <Route path="/games/:type" element={<PracticeGame />} />
-              <Route path="/challenge" element={<ChallengePage />} />
+              <Route path="/games/:type" element={<PracticeGame triggerSync={() => window.location.reload()} />} />
+              <Route path="/challenge" element={<ChallengePage triggerSync={() => window.location.reload()} />} />
               <Route
                 path="/landing"
                 element={
                   <LandingPage
                     secondsToMidnight={secondsToMidnight}
                     user={user}
-                    todayProgress={todayProgress}
+                    todayProgress={currentPuzzle}
+                    triggerSync={() => window.location.reload()}
                   />
                 }
               />
@@ -211,8 +129,47 @@ function App() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <DailyRewardModal 
+        isOpen={showDailyReward} 
+        onClose={() => setShowDailyReward(false)} 
+        onClaim={(reward) => {}} 
+      />
+
+      <StreakShieldPopup
+        isOpen={showStreakShield}
+        onClose={() => {
+            setShowStreakShield(false);
+            localStorage.removeItem('streak_at_risk');
+        }}
+        onUseShield={() => {
+             setShowStreakShield(false);
+             localStorage.removeItem('streak_at_risk');
+             // Logic to decrement shield count in backend/cloud
+        }}
+        streakCount={user?.streakCount || 0}
+      />
+
+      <AchievementToast 
+        achievement={lastUnlocked || {}} 
+        show={showToast} 
+        onClose={() => {
+            setShowToast(false);
+            dispatch(clearLastUnlocked());
+        }} 
+      />
+
+      <AchievementCelebration
+        achievement={lastUnlocked}
+        isOpen={showCelebration}
+        onClose={() => {
+            setShowCelebration(false);
+            dispatch(clearLastUnlocked());
+        }}
+      />
     </MainLayout>
+
+
   );
 }
-
 export default App;

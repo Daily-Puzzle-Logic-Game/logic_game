@@ -1,11 +1,11 @@
-﻿import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronLeft, Share2 } from 'lucide-react';
 import PuzzleContainer from '../components/puzzle/PuzzleContainer';
 import { useSelector } from 'react-redux';
 import { useState, useEffect } from 'react';
 
-const ChallengePage = () => {
+const ChallengePage = ({ triggerSync = null }) => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const { user } = useSelector((state) => state.auth);
@@ -71,6 +71,7 @@ const ChallengePage = () => {
                     practiceMode={true}
                     practiceType={type}
                     challengeSeed={seed}
+                    triggerSync={triggerSync}
                 />
             </div>
         </motion.div>

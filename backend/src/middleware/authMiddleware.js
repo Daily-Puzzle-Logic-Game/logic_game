@@ -6,11 +6,7 @@ const protect = (req, res, next) => {
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
             token = req.headers.authorization.split(' ')[1];
-
-            // Verify the token
             const decoded = jwt.verify(token, process.env.JWT_SECRET || 'super_secret_dev_key');
-
-            // Attach user data to request
             req.user = decoded;
             next();
         } catch (error) {
@@ -22,4 +18,19 @@ const protect = (req, res, next) => {
     }
 };
 
-module.exports = { protect };
+const maybeProtect = (req, res, next) => {
+    let token;
+
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+        try {
+            token = req.headers.authorization.split(' ')[1];
+            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'super_secret_dev_key');
+            req.user = decoded;
+        } catch (error) {
+            console.warn('Optional auth token invalid');
+        }
+    }
+    next();
+};
+
+module.exports = { protect, maybeProtect };

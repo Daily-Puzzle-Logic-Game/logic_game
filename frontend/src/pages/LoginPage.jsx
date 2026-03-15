@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GoogleLogin } from '@react-oauth/google';
-import { Smartphone, ArrowLeft, Mail, Lock, User as UserIcon } from 'lucide-react';
+import { ArrowLeft, Mail, Lock, User as UserIcon } from 'lucide-react';
 import axios from 'axios';
 import { useDispatch } from 'react-redux';
-import { loginSuccess } from '../store/slices/authSlice';
-import { db } from '../db/db';
+import { loginSuccess, guestLogin } from '../store/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
+import { getOrSetGuestId } from '../utils/cookie';
 
 const LoginPage = () => {
     const dispatch = useDispatch();
@@ -29,24 +29,18 @@ const LoginPage = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const localUser = await db.user.get('local_user');
-            const localStreakCount = localUser?.streakCount ?? 0;
-            const localLastPlayed = localUser?.lastPlayed ?? null;
-
             const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/signup';
             
             const response = await axios.post(
                 `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}${endpoint}`,
-                {
-                    ...formData,
-                    localData: { streakCount: localStreakCount, lastPlayed: localLastPlayed }
-                }
+                formData
             );
 
             const { user, token } = response.data;
             dispatch(loginSuccess({ user, token }));
 
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            localStorage.setItem('token', token);
             navigate('/profile');
         } catch (err) {
             console.error('Auth Error:', err);
@@ -56,26 +50,51 @@ const LoginPage = () => {
         }
     };
 
+    const handleGuestSubmit = async (e) => {
+        e.preventDefault();
+        const nameToUse = formData.name || 'GUEST_OPERATIVE';
+        
+        setIsLoading(true);
+        setError(null);
+        try {
+            const guestId = getOrSetGuestId();
+            const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/guest`, {
+                guestId,
+                name: nameToUse
+            });
+
+            const { user, token } = response.data;
+            
+            // By storing the token, they effectively behave as logged-in users and Cloud DB syncing works automatically!
+            localStorage.setItem('token', token);
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+            // Dispatch guestLogin strictly to maintain UI state (e.g. "Abandon Profile" vs "Logout" buttons)
+            dispatch(guestLogin({ name: user.name }));
+            navigate('/profile');
+
+        } catch (err) {
+            console.error('Guest Error:', err);
+            setError('Failed to initiate guest session.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handleGoogleSuccess = async (credentialResponse) => {
         setIsLoading(true);
         setError(null);
         try {
-            const localUser = await db.user.get('local_user');
-            const localStreakCount = localUser?.streakCount ?? 0;
-            const localLastPlayed = localUser?.lastPlayed ?? null;
-
             const response = await axios.post(
                 `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/google`,
-                {
-                    token: credentialResponse.credential,
-                    localData: { streakCount: localStreakCount, lastPlayed: localLastPlayed }
-                }
+                { token: credentialResponse.credential }
             );
 
             const { user, token } = response.data;
             dispatch(loginSuccess({ user, token }));
 
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            localStorage.setItem('token', token);
             navigate('/profile');
         } catch (err) {
             console.error('Google Auth Error:', err);
@@ -120,7 +139,7 @@ const LoginPage = () => {
                         transition={{ delay: 0.2 }}
                         className="text-2xl font-bold text-text-main text-center mb-2"
                     >
-                        {mode === 'login' ? 'Welcome Back' : 'Create an Account'}
+                        {mode === 'login' ? 'Welcome Back' : mode === 'signup' ? 'Create an Account' : 'Guest Operative'}
                     </motion.h1>
                     <motion.p 
                         initial={{ opacity: 0, y: 10 }}
@@ -128,7 +147,7 @@ const LoginPage = () => {
                         transition={{ delay: 0.3 }}
                         className="text-text-muted text-center text-sm"
                     >
-                        {mode === 'login' ? 'Login to continue your logic journey.' : 'Sign up to start saving your progress.'}
+                        {mode === 'login' ? 'Login to continue your logic journey.' : mode === 'signup' ? 'Sign up to start saving your cloud progress.' : 'Enter a name to play instantly.'}
                     </motion.p>
                 </div>
 
@@ -148,10 +167,11 @@ const LoginPage = () => {
                     transition={{ delay: 0.4 }}
                     className="space-y-6"
                 >
-                    <form onSubmit={handleEmailSubmit} className="space-y-4">
-                        <AnimatePresence>
-                            {mode === 'signup' && (
+                    <form onSubmit={mode === 'guest' ? handleGuestSubmit : handleEmailSubmit} className="space-y-4">
+                        <AnimatePresence mode="wait">
+                            {mode !== 'login' && (
                                 <motion.div
+                                    key="name-input"
                                     initial={{ opacity: 0, height: 0 }}
                                     animate={{ opacity: 1, height: 'auto' }}
                                     exit={{ opacity: 0, height: 0 }}
@@ -163,57 +183,67 @@ const LoginPage = () => {
                                     <input
                                         type="text"
                                         name="name"
-                                        placeholder="Full Name"
+                                        placeholder={mode === 'guest' ? "Guest Name" : "Full Name"}
                                         value={formData.name}
                                         onChange={handleChange}
-                                        required={mode === 'signup'}
+                                        required
                                         className="w-full bg-background border border-surface text-text-main rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium placeholder:text-text-muted/50"
                                     />
                                 </motion.div>
                             )}
+
+                            {mode !== 'guest' && (
+                                <motion.div
+                                    key="auth-inputs"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="space-y-4"
+                                >
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                            <Mail className="text-text-muted/60" size={18} />
+                                        </div>
+                                        <input
+                                            type="email"
+                                            name="email"
+                                            placeholder="Email Address"
+                                            value={formData.email}
+                                            onChange={handleChange}
+                                            required={mode !== 'guest'}
+                                            className="w-full bg-background border border-surface text-text-main rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium placeholder:text-text-muted/50"
+                                        />
+                                    </div>
+
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                            <Lock className="text-text-muted/60" size={18} />
+                                        </div>
+                                        <input
+                                            type="password"
+                                            name="password"
+                                            placeholder="Password"
+                                            value={formData.password}
+                                            onChange={handleChange}
+                                            required={mode !== 'guest'}
+                                            minLength={6}
+                                            className="w-full bg-background border border-surface text-text-main rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium placeholder:text-text-muted/50"
+                                        />
+                                    </div>
+                                </motion.div>
+                            )}
                         </AnimatePresence>
                         
-                        <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <Mail className="text-text-muted/60" size={18} />
-                            </div>
-                            <input
-                                type="email"
-                                name="email"
-                                placeholder="Email Address"
-                                value={formData.email}
-                                onChange={handleChange}
-                                required
-                                className="w-full bg-background border border-surface text-text-main rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium placeholder:text-text-muted/50"
-                            />
-                        </div>
-
-                        <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <Lock className="text-text-muted/60" size={18} />
-                            </div>
-                            <input
-                                type="password"
-                                name="password"
-                                placeholder="Password"
-                                value={formData.password}
-                                onChange={handleChange}
-                                required
-                                minLength={6}
-                                className="w-full bg-background border border-surface text-text-main rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium placeholder:text-text-muted/50"
-                            />
-                        </div>
-
                         <button
                             type="submit"
                             disabled={isLoading}
                             className="w-full bg-primary hover:bg-primary/90 text-white rounded-xl py-3 font-semibold transition-all hover:scale-[1.02] shadow-lg shadow-primary/20 disabled:opacity-50"
                         >
-                            {isLoading ? 'Processing...' : (mode === 'login' ? 'Sign In' : 'Sign Up')}
+                            {isLoading ? 'Processing...' : (mode === 'login' ? 'Sign In' : mode === 'signup' ? 'Sign Up' : 'Continue as Guest')}
                         </button>
                     </form>
 
-                    <div className="text-center mt-4">
+                    <div className="text-center mt-4 flex flex-col gap-2">
                         <button
                             type="button"
                             onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
@@ -221,6 +251,16 @@ const LoginPage = () => {
                         >
                             {mode === 'login' ? "Don't have an account? Sign up" : "Already have an account? Log in"}
                         </button>
+                        
+                        {mode !== 'guest' && (
+                            <button
+                                type="button"
+                                onClick={() => setMode('guest')}
+                                className="text-xs text-primary/70 hover:text-primary transition-colors font-bold uppercase tracking-widest p-2"
+                            >
+                                Continue as Guest
+                            </button>
+                        )}
                     </div>
 
                     <div className="relative py-2">
@@ -244,7 +284,7 @@ const LoginPage = () => {
                                 useOneTap
                                 theme="filled_blue"
                                 shape="pill"
-                                width="100%"
+                                width="340"
                                 text="continue_with"
                             />
                         )}

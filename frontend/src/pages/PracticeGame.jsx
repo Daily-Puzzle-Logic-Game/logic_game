@@ -4,7 +4,7 @@ import { ChevronLeft } from 'lucide-react';
 import PuzzleContainer from '../components/puzzle/PuzzleContainer';
 import { useSelector } from 'react-redux';
 
-const PracticeGame = () => {
+const PracticeGame = ({ triggerSync = null }) => {
     const { type } = useParams();
     const navigate = useNavigate();
     const { user } = useSelector((state) => state.auth);
@@ -27,6 +27,7 @@ const PracticeGame = () => {
                 user={user}
                 practiceMode={true}
                 practiceType={type}
+                triggerSync={triggerSync}
             />
         </motion.div>
     );

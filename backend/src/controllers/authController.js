@@ -1,9 +1,7 @@
 const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
+const prisma = require('../config/prisma');
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -61,15 +59,24 @@ exports.googleLogin = async (req, res) => {
         }
 
         // 3. Merge Local Guest Data (If Provided)
-        if (localData && localData.streakCount) {
+        if (localData) {
+            let updateData = {};
+            
             // If local streak > DB streak, update DB
-            if (localData.streakCount > user.streakCount) {
+            if (localData.streakCount && localData.streakCount > user.streakCount) {
+                updateData.streakCount = parseInt(localData.streakCount);
+                updateData.lastPlayed = new Date();
+            }
+            
+            // If local points > DB points, update DB (user played locally then logged in)
+            if (localData.totalPoints && localData.totalPoints > user.totalPoints) {
+                updateData.totalPoints = parseInt(localData.totalPoints);
+            }
+
+            if (Object.keys(updateData).length > 0) {
                 user = await prisma.user.update({
                     where: { id: user.id },
-                    data: {
-                        streakCount: parseInt(localData.streakCount),
-                        lastPlayed: new Date()
-                    },
+                    data: updateData,
                     include: { stats: true }
                 });
             }
@@ -91,7 +98,11 @@ exports.googleLogin = async (req, res) => {
                 name: user.name,
                 picture: user.picture,
                 streakCount: user.streakCount,
-                lastPlayed: user.lastPlayed
+                totalPoints: user.totalPoints,
+                lastPlayed: user.lastPlayed,
+                stats: {
+                    puzzlesSolved: user.stats?.puzzlesSolved || 0
+                }
             }
         });
 
@@ -201,14 +212,19 @@ exports.emailSignup = async (req, res) => {
             include: { stats: true }
         });
 
-        if (localData && localData.streakCount) {
-            if (localData.streakCount > user.streakCount) {
+        if (localData) {
+            let updateData = {};
+            if (localData.streakCount && localData.streakCount > user.streakCount) {
+                updateData.streakCount = parseInt(localData.streakCount);
+                updateData.lastPlayed = new Date();
+            }
+            if (localData.totalPoints && localData.totalPoints > user.totalPoints) {
+                updateData.totalPoints = parseInt(localData.totalPoints);
+            }
+            if (Object.keys(updateData).length > 0) {
                 user = await prisma.user.update({
                     where: { id: user.id },
-                    data: {
-                        streakCount: parseInt(localData.streakCount),
-                        lastPlayed: new Date()
-                    },
+                    data: updateData,
                     include: { stats: true }
                 });
             }
@@ -229,7 +245,11 @@ exports.emailSignup = async (req, res) => {
                 name: user.name,
                 picture: user.picture,
                 streakCount: user.streakCount,
-                lastPlayed: user.lastPlayed
+                totalPoints: user.totalPoints,
+                lastPlayed: user.lastPlayed,
+                stats: {
+                    puzzlesSolved: user.stats?.puzzlesSolved || 0
+                }
             }
         });
     } catch (error) {
@@ -253,14 +273,19 @@ exports.emailLogin = async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
 
-        if (localData && localData.streakCount) {
-            if (localData.streakCount > user.streakCount) {
+        if (localData) {
+            let updateData = {};
+            if (localData.streakCount && localData.streakCount > user.streakCount) {
+                updateData.streakCount = parseInt(localData.streakCount);
+                updateData.lastPlayed = new Date();
+            }
+            if (localData.totalPoints && localData.totalPoints > user.totalPoints) {
+                updateData.totalPoints = parseInt(localData.totalPoints);
+            }
+            if (Object.keys(updateData).length > 0) {
                 user = await prisma.user.update({
                     where: { id: user.id },
-                    data: {
-                        streakCount: parseInt(localData.streakCount),
-                        lastPlayed: new Date()
-                    },
+                    data: updateData,
                     include: { stats: true }
                 });
             }
@@ -281,12 +306,79 @@ exports.emailLogin = async (req, res) => {
                 name: user.name,
                 picture: user.picture,
                 streakCount: user.streakCount,
-                lastPlayed: user.lastPlayed
+                totalPoints: user.totalPoints,
+                lastPlayed: user.lastPlayed,
+                stats: {
+                    puzzlesSolved: user.stats?.puzzlesSolved || 0
+                }
             }
         });
     } catch (error) {
         console.error('Login Error:', error);
         res.status(500).json({ message: error.message || 'Server error during login' });
+    }
+};
+
+/**
+ * Handles Guest Login Flow
+ */
+exports.guestLogin = async (req, res) => {
+    try {
+        const { guestId, name } = req.body;
+        if (!guestId) return res.status(400).json({ message: 'guestId is required' });
+
+        const guestEmail = `guest_${guestId.toLowerCase()}@logiclooper.local`;
+        
+        let user = await prisma.user.findUnique({ where: { email: guestEmail } });
+        
+        const displayName = name || `Operative ${guestId.slice(-4)}`;
+
+        if (!user) {
+            user = await prisma.user.create({
+                data: {
+                    email: guestEmail,
+                    name: displayName,
+                    picture: '',
+                    stats: { create: {} }
+                },
+                include: { stats: true }
+            });
+        } else {
+            if (name && user.name !== name) {
+                // Update name if they chose a new one
+                user = await prisma.user.update({
+                    where: { id: user.id },
+                    data: { name },
+                    include: { stats: true }
+                });
+            }
+        }
+
+        const sessionToken = jwt.sign(
+            { id: user.id, email: user.email },
+            process.env.JWT_SECRET || 'super_secret_dev_key',
+            { expiresIn: '7d' }
+        );
+
+        res.status(200).json({
+            message: 'Guest Session Initiated',
+            token: sessionToken,
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                picture: user.picture,
+                streakCount: user.streakCount,
+                totalPoints: user.totalPoints,
+                lastPlayed: user.lastPlayed,
+                stats: {
+                    puzzlesSolved: user.stats?.puzzlesSolved || 0
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Guest Auth Error:', error);
+        res.status(500).json({ message: 'Server error during guest auth' });
     }
 };
 

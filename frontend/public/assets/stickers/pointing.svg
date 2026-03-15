@@ -1,0 +1,15 @@
+<svg width="240" height="240" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Body -->
+  <path d="M70 200C70 180 80 160 100 150H140C160 160 170 180 170 200" stroke="#3B82F6" stroke-width="8" stroke-linecap="round"/>
+  
+  <!-- Pointing Arm -->
+  <path d="M150 150L190 130L210 135" stroke="#3B82F6" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="210" cy="135" r="5" fill="#22D3EE"/>
+  
+  <!-- Head -->
+  <circle cx="120" cy="90" r="40" fill="#FDE6D2" stroke="#3B82F6" stroke-width="4"/>
+  <path d="M85 80C80 60 100 40 120 40C140 40 160 60 155 80C165 90 165 110 150 120C140 115 130 110 120 110C110 110 100 115 90 120C75 110 75 90 85 80Z" fill="#3B82F6"/>
+  
+  <!-- Visor -->
+  <rect x="95" y="80" width="50" height="15" rx="4" fill="rgba(34, 211, 238, 0.4)" stroke="#22D3EE" stroke-width="2"/>
+</svg>

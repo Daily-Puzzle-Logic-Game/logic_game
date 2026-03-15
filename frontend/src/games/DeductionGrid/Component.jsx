@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { playSound } from '../../utils/SoundManager';
+import { Sparkles } from 'lucide-react';
 
 const DeductionGridComponent = ({ puzzleState, onUpdate, isReadOnly }) => {
     const { people, colors, items, clues, gridState } = puzzleState;
-
     const [localState, setLocalState] = useState(gridState);
 
     const handleSelect = (person, type, value) => {
         if (isReadOnly) return;
+        playSound('bubble_pop');
         const newState = {
             ...localState,
             [person]: { ...localState[person], [type]: value }
@@ -17,53 +19,71 @@ const DeductionGridComponent = ({ puzzleState, onUpdate, isReadOnly }) => {
     };
 
     return (
-        <div className="flex flex-col gap-6 py-2 w-full max-w-2xl mx-auto">
-            {/* Clues Card */}
-            <div className="bg-surface/50 border border-surface p-4 rounded-xl shadow-inner">
-                <h4 className="text-xs font-bold text-primary uppercase tracking-tighter mb-3">Logic Clues</h4>
-                <ul className="space-y-2">
+        <div className="flex flex-col gap-8 py-4 w-full max-w-3xl mx-auto">
+            {/* Logic Clues Terminal */}
+            <div className="bg-zinc-900/60 backdrop-blur-xl border border-white/5 p-6 rounded-[2rem] shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-1 h-full bg-cyan/50" />
+                <h4 className="flex items-center gap-2 text-[10px] font-black text-cyan uppercase tracking-[0.3em] mb-4">
+                    <Sparkles size={12} className="animate-pulse" />
+                    Simulation_Logic_Parameters
+                </h4>
+                <ul className="space-y-3">
                     {clues.map((clue, i) => (
-                        <li key={i} className="text-sm text-text-main flex gap-2">
-                            <span className="text-primary font-bold">•</span>
-                            {clue}
-                        </li>
+                        <motion.li 
+                            key={i} 
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.1 }}
+                            className="text-sm text-white/70 flex gap-3 items-start"
+                        >
+                            <span className="text-cyan font-black mt-1">[{i + 1}]</span>
+                            <span className="leading-relaxed">{clue}</span>
+                        </motion.li>
                     ))}
                 </ul>
             </div>
 
             {/* Selection Grid */}
-            <div className="space-y-4">
-                {people.map((person) => (
+            <div className="grid grid-cols-1 gap-4">
+                {people.map((person, idx) => (
                     <motion.div
                         key={person}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center bg-surface p-4 rounded-2xl border border-surface shadow-md"
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 + idx * 0.1 }}
+                        whileHover={{ scale: 1.02 }}
+                        onMouseEnter={() => playSound('hover')}
+                        className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center bg-white/5 backdrop-blur-md p-6 rounded-[2rem] border border-white/5 hover:border-white/10 transition-all shadow-xl"
                     >
-                        <div className="font-bold text-lg text-text-main">{person}</div>
+                        <div className="md:col-span-3">
+                            <h3 className="text-lg font-black text-white tracking-widest uppercase">{person}</h3>
+                            <div className="w-8 h-1 bg-cyan rounded-full mt-1" />
+                        </div>
 
-                        <div className="flex flex-col gap-1">
-                            <label className="text-[10px] uppercase font-bold text-text-muted">House Color</label>
+                        <div className="md:col-span-4 flex flex-col gap-2">
+                            <label className="text-[9px] uppercase font-black text-white/30 tracking-widest pl-1">Sector_Color</label>
                             <select
                                 value={localState[person].color || ''}
                                 onChange={(e) => handleSelect(person, 'color', e.target.value)}
+                                onMouseEnter={() => playSound('hover')}
                                 disabled={isReadOnly}
-                                className="bg-background border border-surface rounded-lg p-2 text-sm text-text-main outline-none focus:ring-1 focus:ring-primary"
+                                className="bg-zinc-950/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:ring-2 focus:ring-cyan/50 transition-all cursor-pointer appearance-none"
                             >
-                                <option value="">Select Color</option>
+                                <option value="">- SELECT -</option>
                                 {colors.map(c => <option key={c} value={c}>{c}</option>)}
                             </select>
                         </div>
 
-                        <div className="flex flex-col gap-1">
-                            <label className="text-[10px] uppercase font-bold text-text-muted">Possession</label>
+                        <div className="md:col-span-5 flex flex-col gap-2">
+                            <label className="text-[9px] uppercase font-black text-white/30 tracking-widest pl-1">Data_Object</label>
                             <select
                                 value={localState[person].item || ''}
                                 onChange={(e) => handleSelect(person, 'item', e.target.value)}
+                                onMouseEnter={() => playSound('hover')}
                                 disabled={isReadOnly}
-                                className="bg-background border border-surface rounded-lg p-2 text-sm text-text-main outline-none focus:ring-1 focus:ring-primary"
+                                className="bg-zinc-950/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:ring-2 focus:ring-cyan/50 transition-all cursor-pointer appearance-none"
                             >
-                                <option value="">Select Item</option>
+                                <option value="">- SELECT -</option>
                                 {items.map(i => <option key={i} value={i}>{i}</option>)}
                             </select>
                         </div>
@@ -72,9 +92,11 @@ const DeductionGridComponent = ({ puzzleState, onUpdate, isReadOnly }) => {
             </div>
 
             {!isReadOnly && (
-                <p className="text-center text-xs text-text-muted italic">
-                    Use the clues provided to deduce the correct color and item for each person.
-                </p>
+                <div className="flex justify-center mt-4">
+                    <div className="px-4 py-2 bg-white/5 rounded-full border border-white/5 text-[9px] font-black text-white/30 tracking-[0.3em] uppercase">
+                        Simulation Loop: Analyzing Constraints...
+                    </div>
+                </div>
             )}
         </div>
     );

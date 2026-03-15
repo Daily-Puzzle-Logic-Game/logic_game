@@ -14,4 +14,7 @@ router.post('/signup', authController.emailSignup);
 // POST /api/auth/login
 router.post('/login', authController.emailLogin);
 
+// POST /api/auth/guest
+router.post('/guest', authController.guestLogin);
+
 module.exports = router;

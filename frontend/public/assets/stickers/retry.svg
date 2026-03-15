@@ -1,0 +1,15 @@
+<svg width="240" height="240" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Body -->
+  <path d="M70 200C70 180 80 160 100 150H140C160 160 170 180 170 200" stroke="#EF4444" stroke-width="8" stroke-linecap="round"/>
+  
+  <!-- Head -->
+  <circle cx="120" cy="90" r="40" fill="#FDE6D2" stroke="#EF4444" stroke-width="4"/>
+  <path d="M85 80C80 60 100 40 120 40C140 40 160 60 155 80C165 90 165 110 150 120C140 115 130 110 120 110C110 110 100 115 90 120C75 110 75 90 85 80Z" fill="#EF4444"/>
+  
+  <!-- Visor (Red) -->
+  <rect x="95" y="80" width="50" height="15" rx="4" fill="rgba(239, 68, 68, 0.4)" stroke="#EF4444" stroke-width="2"/>
+  
+  <!-- Teary/Sad Glow -->
+  <circle cx="110" cy="87" r="1.5" fill="white" opacity="0.8"/>
+  <circle cx="130" cy="87" r="1.5" fill="white" opacity="0.8"/>
+</svg>
