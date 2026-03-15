@@ -344,8 +344,8 @@ exports.guestLogin = async (req, res) => {
                 include: { stats: true }
             });
         } else {
+            // Update name only if a new name is explicitly provided and it's different
             if (name && user.name !== name) {
-                // Update name if they chose a new one
                 user = await prisma.user.update({
                     where: { id: user.id },
                     data: { name },

@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState, useMemo } from 'react';
+import axios from 'axios';
 import {
   ArrowRight,
   Zap,
@@ -125,12 +126,32 @@ const LandingPage = ({ secondsToMidnight = 0, user = null, todayProgress = null,
   const [livePulse, setLivePulse] = useState(0);
   const [graphData, setGraphData] = useState([30, 60, 45, 90, 65, 80, 55, 100, 70, 85]);
 
+  // Reward Status Check
+  const [rewardStatus, setRewardStatus] = useState({ canClaim: false });
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (user && token) {
+      const fetchReward = async () => {
+        try {
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+          const res = await axios.get(`${API_URL}/api/rewards/status`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setRewardStatus(res.data);
+        } catch (err) {
+          console.error('Landing reward fetch failed:', err);
+        }
+      };
+      fetchReward();
+    }
+  }, [user]);
+
   // Fetch Global Stats
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await fetch('/api/user/stats');
-        const data = await res.json();
+        const res = await axios.get('/api/user/stats');
+        const data = res.data;
         if (data && !data.message) {
           setGlobalStats(data);
         }
@@ -560,7 +581,20 @@ const LandingPage = ({ secondsToMidnight = 0, user = null, todayProgress = null,
           <div className="max-w-4xl mx-auto">
             <div className="flex flex-col md:flex-row justify-between items-center md:items-end mb-12 gap-8 bg-black/40 backdrop-blur-md p-8 rounded-3xl border border-white/5 shadow-2xl transition-colors">
               <div>
-                <h2 className="text-3xl font-black uppercase tracking-tighter text-slate-900 dark:text-white mb-2 italic">Today's Challenge</h2>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-3xl font-black uppercase tracking-tighter text-slate-900 dark:text-white mb-2 italic">Today's Challenge</h2>
+                  {rewardStatus.canClaim && (
+                    <motion.div 
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: [1, 1.1, 1], opacity: 1 }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="bg-accent text-white text-[10px] font-black px-3 py-1 rounded-full shadow-[0_0_15px_rgba(var(--accent-rgb),0.5)] cursor-pointer"
+                      onClick={() => window.location.reload()} // Reload triggers the App.jsx check or we can pass a prop
+                    >
+                      🎁 REWARD UNCLAIMED
+                    </motion.div>
+                  )}
+                </div>
                 <p className="text-[10px] font-mono text-slate-500 dark:text-zinc-500 uppercase tracking-widest leading-none flex items-center gap-2">
                   Streak: <span className={`font-black ${streakVisual !== 'NONE' ? 'text-orange-500 scale-110' : 'text-blue-500'}`}>
                     {user ? user.streakCount : 0} {streakVisual === 'BLAZING_STREAK' ? '🔥🔥🔥' : streakVisual === 'STRONG_FLAME' ? '🔥🔥' : '🔥'}

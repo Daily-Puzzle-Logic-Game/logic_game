@@ -75,7 +75,7 @@ class ProgressEngine {
             const rangeSize = tier.range[1] - tier.range[0] + 1;
             const step = Math.max(1, Math.ceil(rangeSize / 5));
             const subIdx = Math.floor((currentLevel - tier.range[0]) / step);
-            const ranks = ['V', 'IV', 'III', 'II', 'I'];
+            const ranks = ['I', 'II', 'III', 'IV', 'V'];
             subRank = ranks[Math.min(4, subIdx)] || 'V';
         }
 

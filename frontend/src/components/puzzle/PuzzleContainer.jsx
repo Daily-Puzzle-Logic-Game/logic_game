@@ -23,15 +23,17 @@ import { addXP, updateEngagement, useHint, buyHintSuccess } from '../../store/sl
 
 // Engagement Engines
 import ProgressEngine from '../../engines/ProgressEngine';
+import StreakEngine from '../../engines/StreakEngine';
 import AchievementEngine from '../../engines/AchievementEngine';
 import DifficultyEngine from '../../engines/DifficultyEngine';
-import StreakEngine from '../../engines/StreakEngine';
+import GameHUD from './GameHUD';
+import StorageManager from '../../utils/StorageManager';
+import SyncManager from '../../utils/SyncManager';
 
 // Utilities
 import { THEMES, getCurrentTheme, setTheme as setPuzzleTheme } from '../../utils/ThemeManager';
 
 // Components
-import GameHUD from './GameHUD';
 import NeuralBackground from '../effects/NeuralBackground';
 import RewardChain from '../rewards/RewardChain';
 
@@ -133,7 +135,7 @@ const PuzzleContainer = ({ user: propUser, todayProgress, practiceMode = false, 
                 hintsUsedCount,
                 mistakes
             };
-            localStorage.setItem(`dailyPuzzleState_${dateStr}`, JSON.stringify(stateToSave));
+            StorageManager.setItem(`dailyPuzzleState_${dateStr}`, stateToSave);
         }
     }, [activeState, gameTime, isTimerStarted, hintsUsedCount, mistakes, practiceMode, hasSubmitted]);
 
@@ -162,17 +164,16 @@ const PuzzleContainer = ({ user: propUser, todayProgress, practiceMode = false, 
             initPractice();
         } else if (todayProgress) {
             const dateStr = getTodayDateString();
-            const saved = localStorage.getItem(`dailyPuzzleState_${dateStr}`);
+            const saved = StorageManager.getItem(`dailyPuzzleState_${dateStr}`);
             
             if (saved && !todayProgress.completed) {
                 try {
-                    const parsed = JSON.parse(saved);
-                    setActiveState(parsed.state);
-                    setGameTime(parsed.gameTime || 0);
-                    setIsTimerStarted(parsed.isTimerStarted || false);
-                    setHintsUsedCount(parsed.hintsUsedCount || 0);
-                    setMistakes(parsed.mistakes || 0);
-                    setProgress(calculateProgress(todayProgress.puzzleType, parsed.state));
+                    setActiveState(saved.state);
+                    setGameTime(saved.gameTime || 0);
+                    setIsTimerStarted(saved.isTimerStarted || false);
+                    setHintsUsedCount(saved.hintsUsedCount || 0);
+                    setMistakes(saved.mistakes || 0);
+                    setProgress(calculateProgress(todayProgress.puzzleType, saved.state));
                 } catch (e) {
                     console.error("Failed to restore saved puzzle state", e);
                     setActiveState(todayProgress.state);
@@ -392,7 +393,7 @@ const PuzzleContainer = ({ user: propUser, todayProgress, practiceMode = false, 
             const difficulty = practiceMode ? 2 : (todayProgress?.difficultyLevel || 2);
             
             // New Score Formula: score = baseScore * diffMult * timeMult - hintPenalty
-            const baseScore = 1000;
+            const baseScore = 500;
             const diffMultipliers = { 1: 1.0, 2: 1.5, 3: 2.0, 4: 2.5 };
             const diffMult = diffMultipliers[difficulty] || 1.5;
             const timeMult = Math.max(0.5, 1 - (timeTaken / 600)); // Capped at 10 mins
@@ -440,50 +441,50 @@ const PuzzleContainer = ({ user: propUser, todayProgress, practiceMode = false, 
                 dispatch(unlockAchievement(ach.id));
             });
 
-            const syncResults = async () => {
+            const syncResultsBatched = async () => {
                 try {
-                    const token = localStorage.getItem('token');
-                    if (!token) return;
-
-                    // Calculate updated streak for Daily Challenges
-                    let calculatedStreak = user?.streakCount || 0;
-                    if (!practiceMode) {
-                        const status = StreakEngine.checkStatus(user?.lastPlayed, calculatedStreak, false);
-                        if (status.status === 'INCREASE') {
-                            calculatedStreak = status.newStreak;
-                        }
-                    }
-
-                    const seed = practiceMode ? `practice-${Date.now()}` : (todayProgress.puzzleSeed || getTodayDateString());
-                    const hash = generateScoreHash(user?.id || 'guest', totalXP, timeTaken, seed);
-
-                    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-                    await axios.post(`${API_URL}/api/scores/sync`, {
+                    const seed = practiceMode ? `practice-${Date.now()}` : (todayProgress?.puzzleSeed || getTodayDateString());
+                    
+                    // CRITICAL: Ensure we use the exact same ID logic as backend
+                    const authUser = JSON.parse(localStorage.getItem('user') || '{}');
+                    const identity = authUser?.id || user?.id || 'guest';
+                    
+                    const hash = generateScoreHash(identity, totalXP, timeTaken, seed);
+                    
+                    const scoreData = {
                         date: practiceMode ? `practice-${Date.now()}` : getTodayDateString(),
                         puzzleId: type,
                         score: totalXP,
                         timeTaken,
                         mistakes,
                         hintsUsed: hintsUsedCount,
-                        streakCount: calculatedStreak,
-                        hash,
                         seed,
+                        hash,
                         bonuses: { speed: speedBonus, hintless: hintlessBonus, perfect: perfectBonus }
-                    }, { headers: { Authorization: `Bearer ${token}` } });
-                    
-                    if (triggerSync) triggerSync();
+                    };
 
-                    // If Journey Mode, sync progression
+                    const result = await SyncManager.queueScore(scoreData);
+                    
+                    if (result.status === 'synced') {
+                        if (triggerSync) triggerSync();
+                        if (result.data?.achievements) {
+                            // Backend might return achievements unlocked during batch
+                        }
+                    }
+
+                    // Journey progression still syncs immediately for UI feedback
                     if (isJourney) {
+                        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+                        const token = localStorage.getItem('token');
                         await axios.post(`${API_URL}/api/user/journey/complete`, {
                             levelSolved: todayProgress.level
                         }, { headers: { Authorization: `Bearer ${token}` } });
                     }
 
-                    setTimeout(() => setShowSessionExtender(true), 2000);
+                    setTimeout(() => setShowSessionExtender(true), 1500);
                 } catch (err) { console.error(err); }
             };
-            syncResults();
+            syncResultsBatched();
         } else {
             playSound('wrong');
             setMistakes(prev => prev + 1);

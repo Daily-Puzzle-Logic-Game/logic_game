@@ -5,6 +5,7 @@ import { getTodayDateString, getSecondsUntilMidnight } from '../utils/time';
 import { getOrSetGuestId } from '../utils/cookie';
 import SeededRandom, { encryptData } from '../utils/crypto';
 import { setCurrentPuzzle, updateEngagement } from '../store/slices/gameSlice';
+import { guestLogin } from '../store/slices/authSlice';
 
 // Game Generators
 import { generateNumberMatrix } from '../games/NumberMatrix/generator';
@@ -30,12 +31,18 @@ export const useGameEngine = () => {
                 const guestId = !currentToken ? getOrSetGuestId() : null;
                 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-                // 1. If no token, authenticate as guest
-                if (!currentToken && guestId) {
+                // 1. If no token, authenticate as guest ONLY if they were a guest previously
+                // This prevents automatic re-login after an explicit logout
+                const wasGuest = localStorage.getItem('isGuest') === 'true';
+                if (!currentToken && guestId && wasGuest) {
                     const authRes = await axios.post(`${API_URL}/api/auth/guest`, { guestId });
                     if (authRes.data.token) {
                         currentToken = authRes.data.token;
                         localStorage.setItem('token', currentToken);
+                        
+                        // Sync Redux store with silent login results
+                        const { user, token } = authRes.data;
+                        dispatch(guestLogin({ user, token }));
                     }
                 }
 

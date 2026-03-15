@@ -4,13 +4,24 @@ const loadInitialState = () => {
     try {
         const token = localStorage.getItem('token');
         const userStr = localStorage.getItem('user');
+        const isGuest = localStorage.getItem('isGuest') === 'true';
         
         if (token && userStr) {
             return {
                 user: JSON.parse(userStr),
                 token: token,
-                isAuthenticated: true,
-                isGuest: false,
+                isAuthenticated: !isGuest,
+                isGuest: isGuest,
+            };
+        }
+
+        // Token exists but no user object — likely a guest who was saved before this fix
+        if (token && isGuest) {
+            return {
+                user: { name: 'GUEST_OPERATIVE' },
+                token: token,
+                isAuthenticated: false,
+                isGuest: true,
             };
         }
     } catch (e) {
@@ -18,8 +29,8 @@ const loadInitialState = () => {
     }
     
     return {
-        user: null, // Will hold Google/Truecaller user info
-        token: null, // Our internal JWT
+        user: null,
+        token: null,
         isAuthenticated: false,
         isGuest: false, 
     };
@@ -41,6 +52,7 @@ const authSlice = createSlice({
             // Persist to browser storage
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(user));
+            localStorage.removeItem('isGuest');
         },
         logout: (state) => {
             state.user = null;
@@ -51,13 +63,19 @@ const authSlice = createSlice({
             // Clear browser storage
             localStorage.removeItem('token');
             localStorage.removeItem('user');
+            localStorage.removeItem('isGuest');
         },
         guestLogin: (state, action) => {
-            const { name } = action.payload;
-            state.user = { name };
-            state.token = null;
+            const { user, token } = action.payload;
+            state.user = user;
+            state.token = token || null;
             state.isAuthenticated = false;
             state.isGuest = true;
+
+            // Persist guest session so it survives reload/logout-login
+            if (token) localStorage.setItem('token', token);
+            localStorage.setItem('user', JSON.stringify(user));
+            localStorage.setItem('isGuest', 'true');
         }
     }
 });

@@ -31,19 +31,21 @@ const sounds = {
 const unlockAudio = () => {
     const resume = () => {
         if (Howler.ctx && Howler.ctx.state === 'suspended') {
-            Howler.ctx.resume().catch(() => {});
+            Howler.ctx.resume().then(() => {
+                console.log("AudioContext Resumed");
+            }).catch(() => {});
         }
     };
     
-    resume();
-    
     if (typeof window !== 'undefined') {
-        const events = ['click', 'keydown', 'touchstart', 'mousedown'];
+        const events = ['click', 'touchstart', 'mousedown'];
         const handler = () => {
             resume();
+            // Don't remove immediately, maybe wait for a few interactions to be sure
+            // but for standard policy once is enough.
             events.forEach(e => window.removeEventListener(e, handler));
         };
-        events.forEach(e => window.addEventListener(e, handler, { once: true }));
+        events.forEach(e => window.addEventListener(e, handler, { once: true, passive: true }));
     }
 };
 
@@ -63,7 +65,12 @@ export const playSound = (type) => {
             
             // Try to resume context if it's suspended (async but won't block current play attempt)
             if (Howler.ctx && Howler.ctx.state === 'suspended') {
-                Howler.ctx.resume().catch(() => {});
+                Howler.ctx.resume().then(() => {
+                   sounds[type].play();
+                }).catch(() => {
+                   sounds[type].play(); // Try anyway
+                });
+                return; 
             }
 
             sounds[type].play();

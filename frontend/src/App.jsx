@@ -1,35 +1,35 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
 
 import MainLayout from './components/layout/MainLayout';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, Puzzle, Zap } from 'lucide-react';
 import { useGameEngine } from './hooks/useGameEngine';
-import { formatTime } from './utils/time';
-import PuzzleContainer from './components/puzzle/PuzzleContainer';
-import ProfileCenter from './pages/ProfileCenter';
-import GamesLibrary from './pages/GamesLibrary';
-import PracticeGame from './pages/PracticeGame';
-import ChallengePage from './pages/ChallengePage';
-import LandingPage from './pages/LandingPage';
-import LoginPage from './pages/LoginPage';
-import Leaderboard from './pages/Leaderboard';
-import HintlessHeroChallenge from './pages/HintlessHeroChallenge';
-import PuzzleMasterChallenge from './pages/PuzzleMasterChallenge';
-import StreakKeeperChallenge from './pages/StreakKeeperChallenge';
-import DailyRewardModal from './components/rewards/DailyRewardModal';
-import StreakShieldPopup from './components/rewards/StreakShieldPopup';
-// Achievements.jsx removed
-import AchievementToast from './components/ui/AchievementToast';
-import AchievementCelebration from './components/rewards/AchievementCelebration';
 import AmbientBackground from './components/ui/AmbientBackground';
-import { clearLastUnlocked } from './store/slices/achievementSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import './App.css';
 
+// Lazy loaded components
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const ProfileCenter = lazy(() => import('./pages/ProfileCenter'));
+const GamesLibrary = lazy(() => import('./pages/GamesLibrary'));
+const PracticeGame = lazy(() => import('./pages/PracticeGame'));
+const ChallengePage = lazy(() => import('./pages/ChallengePage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const Leaderboard = lazy(() => import('./pages/Leaderboard'));
+const HintlessHeroChallenge = lazy(() => import('./pages/HintlessHeroChallenge'));
+const PuzzleMasterChallenge = lazy(() => import('./pages/PuzzleMasterChallenge'));
+const StreakKeeperChallenge = lazy(() => import('./pages/StreakKeeperChallenge'));
+const JourneyMap = lazy(() => import('./pages/JourneyMap'));
+const JourneyGame = lazy(() => import('./pages/JourneyGame'));
 
-import JourneyMap from './pages/JourneyMap';
-import JourneyGame from './pages/JourneyGame';
+const DailyRewardModal = lazy(() => import('./components/rewards/DailyRewardModal'));
+const StreakShieldPopup = lazy(() => import('./components/rewards/StreakShieldPopup'));
+const AchievementToast = lazy(() => import('./components/ui/AchievementToast'));
+const AchievementCelebration = lazy(() => import('./components/rewards/AchievementCelebration'));
+
+import { clearLastUnlocked } from './store/slices/achievementSlice';
 
 function App() {
   const dispatch = useDispatch();
@@ -52,18 +52,27 @@ function App() {
   const location = useLocation();
 
   useEffect(() => {
-
-    if (!isInitializing && user) {
-      // 1. Check Daily Reward
-      const lastClaim = localStorage.getItem('lastRewardClaim');
-      const todayStr = new Date().toISOString().split('T')[0];
-      if (lastClaim !== todayStr) {
-        setTimeout(() => setShowDailyReward(true), 1000);
-      }
+    const token = localStorage.getItem('token');
+    if (!isInitializing && user && token) {
+      // 1. Check Daily Reward Status via API
+      const checkReward = async () => {
+        try {
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+          const res = await axios.get(`${API_URL}/api/rewards/status`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          if (res.data.canClaim) {
+            setTimeout(() => setShowDailyReward(true), 2000);
+          }
+        } catch (err) {
+          console.error('Initial reward check failed:', err);
+        }
+      };
+      
+      checkReward();
 
       // 2. Check Streak Shield (If user has shields and streak is at risk)
-      // For now, let's assume simple shield check if streak is broken
-      // This logic will be fleshed out as we implement streak shield persistence
       const streakBroken = localStorage.getItem('streak_at_risk') === 'true';
       if (streakBroken) {
         setShowStreakShield(true);
@@ -91,41 +100,45 @@ function App() {
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
           >
-            <Routes location={location} key={location.pathname}>
-
-              <Route path="/" element={
-                <LandingPage
-                  secondsToMidnight={secondsToMidnight}
-                  user={user}
-                  todayProgress={currentPuzzle}
-                  triggerSync={() => window.location.reload()}
-                />
-              } />
-              <Route path="/profile" element={<ProfileCenter />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
-              <Route path="/achievements" element={<ProfileCenter />} />
-              <Route path="/challenge/hintless-hero" element={<HintlessHeroChallenge />} />
-
-               <Route path="/journey" element={<JourneyMap />} />
-               <Route path="/play/journey/:level" element={<JourneyGame />} />
-               <Route path="/challenge/puzzle-master" element={<PuzzleMasterChallenge />} />
-              <Route path="/challenge/streak-keeper" element={<StreakKeeperChallenge />} />
-              <Route path="/games" element={<GamesLibrary />} />
-              <Route path="/games/:type" element={<PracticeGame triggerSync={() => window.location.reload()} />} />
-              <Route path="/challenge" element={<ChallengePage triggerSync={() => window.location.reload()} />} />
-              <Route
-                path="/landing"
-                element={
+            <Suspense fallback={
+              <div className="flex h-64 items-center justify-center text-zinc-500 font-mono text-xs uppercase tracking-widest">
+                Loading_Neural_Module...
+              </div>
+            }>
+              <Routes location={location} key={location.pathname}>
+                <Route path="/" element={
                   <LandingPage
                     secondsToMidnight={secondsToMidnight}
                     user={user}
                     todayProgress={currentPuzzle}
                     triggerSync={() => window.location.reload()}
                   />
-                }
-              />
-            </Routes>
+                } />
+                <Route path="/profile" element={<ProfileCenter />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/leaderboard" element={<Leaderboard />} />
+                <Route path="/achievements" element={<ProfileCenter />} />
+                <Route path="/challenge/hintless-hero" element={<HintlessHeroChallenge />} />
+                <Route path="/journey" element={<JourneyMap />} />
+                <Route path="/play/journey/:level" element={<JourneyGame />} />
+                <Route path="/challenge/puzzle-master" element={<PuzzleMasterChallenge />} />
+                <Route path="/challenge/streak-keeper" element={<StreakKeeperChallenge />} />
+                <Route path="/games" element={<GamesLibrary />} />
+                <Route path="/games/:type" element={<PracticeGame triggerSync={() => window.location.reload()} />} />
+                <Route path="/challenge" element={<ChallengePage triggerSync={() => window.location.reload()} />} />
+                <Route
+                  path="/landing"
+                  element={
+                    <LandingPage
+                      secondsToMidnight={secondsToMidnight}
+                      user={user}
+                      todayProgress={currentPuzzle}
+                      triggerSync={() => window.location.reload()}
+                    />
+                  }
+                />
+              </Routes>
+            </Suspense>
           </motion.div>
         )}
       </AnimatePresence>

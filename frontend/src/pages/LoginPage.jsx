@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GoogleLogin } from '@react-oauth/google';
 import { ArrowLeft, Mail, Lock, User as UserIcon } from 'lucide-react';
 import axios from 'axios';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { loginSuccess, guestLogin } from '../store/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
 import { getOrSetGuestId } from '../utils/cookie';
@@ -23,6 +23,14 @@ const LoginPage = () => {
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
+
+    // Pre-fill profile name if already logged in as guest
+    const { user: authUser, isGuest } = useSelector(state => state.auth);
+    useEffect(() => {
+        if (isGuest && authUser?.name && !formData.name) {
+            setFormData(prev => ({ ...prev, name: authUser.name }));
+        }
+    }, [isGuest, authUser]);
 
     const handleEmailSubmit = async (e) => {
         e.preventDefault();
@@ -50,6 +58,40 @@ const LoginPage = () => {
         }
     };
 
+    const handleGuestToggle = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const guestId = getOrSetGuestId();
+            // Try silent login first
+            const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/guest`, {
+                guestId
+            });
+
+            const { user, token } = response.data;
+            
+            // If user already has a custom name (not 'Operative XXXX'), log them in immediately
+            const isDefaultName = user.name && user.name.startsWith('Operative ');
+            
+            if (!isDefaultName) {
+                localStorage.setItem('token', token);
+                localStorage.setItem('user', JSON.stringify(user));
+                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                dispatch(guestLogin({ user, token }));
+                navigate('/profile');
+            } else {
+                // Otherwise, show the name input mode
+                setMode('guest');
+                if (user.name) setFormData(prev => ({ ...prev, name: user.name }));
+            }
+        } catch (err) {
+            console.error('Guest Check Error:', err);
+            setMode('guest'); // Fallback to manual guest mode
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handleGuestSubmit = async (e) => {
         e.preventDefault();
         const nameToUse = formData.name || 'GUEST_OPERATIVE';
@@ -65,12 +107,11 @@ const LoginPage = () => {
 
             const { user, token } = response.data;
             
-            // By storing the token, they effectively behave as logged-in users and Cloud DB syncing works automatically!
             localStorage.setItem('token', token);
+            localStorage.setItem('user', JSON.stringify(user));
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-            // Dispatch guestLogin strictly to maintain UI state (e.g. "Abandon Profile" vs "Logout" buttons)
-            dispatch(guestLogin({ name: user.name }));
+            dispatch(guestLogin({ user, token }));
             navigate('/profile');
 
         } catch (err) {
@@ -98,7 +139,10 @@ const LoginPage = () => {
             navigate('/profile');
         } catch (err) {
             console.error('Google Auth Error:', err);
-            setError(err.response?.data?.message || 'Authentication failed. Please try again.');
+            const msg = err.response?.status === 403 
+                ? 'Authorized Origin Error: Ensure this URL is added to your Google Cloud Console.' 
+                : (err.response?.data?.message || 'Authentication failed. Please try again.');
+            setError(msg);
         } finally {
             setIsLoading(false);
         }
@@ -255,7 +299,7 @@ const LoginPage = () => {
                         {mode !== 'guest' && (
                             <button
                                 type="button"
-                                onClick={() => setMode('guest')}
+                                onClick={handleGuestToggle}
                                 className="text-xs text-primary/70 hover:text-primary transition-colors font-bold uppercase tracking-widest p-2"
                             >
                                 Continue as Guest
@@ -280,8 +324,7 @@ const LoginPage = () => {
                         ) : (
                             <GoogleLogin
                                 onSuccess={handleGoogleSuccess}
-                                onError={() => setError('Google Login Failed')}
-                                useOneTap
+                                onError={() => setError('Google Login Failed: Verify your Client ID and Authorized Origins.')}
                                 theme="filled_blue"
                                 shape="pill"
                                 width="340"

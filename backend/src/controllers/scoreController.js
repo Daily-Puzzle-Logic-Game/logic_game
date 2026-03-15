@@ -14,7 +14,11 @@ exports.syncScore = async (req, res) => {
         const expectedPayload = `${userId}:${score}:${timeTaken}:${seed || date}:${APP_SECRET}`;
         const expectedHash = crypto.createHash('sha256').update(expectedPayload).digest('hex');
 
-        if (hash !== expectedHash) {
+        // Fallback for guest accounts where frontend might use 'guest' instead of UUID
+        const guestPayload = `guest:${score}:${timeTaken}:${seed || date}:${APP_SECRET}`;
+        const guestHash = crypto.createHash('sha256').update(guestPayload).digest('hex');
+
+        if (hash !== expectedHash && hash !== guestHash) {
             console.warn('SCORE TAMPERING DETECTED:', { userId, providedHash: hash, expectedHash });
             return res.status(403).json({ message: 'Security verification failed' });
         }
@@ -69,23 +73,24 @@ exports.syncScore = async (req, res) => {
         const user = await prisma.user.findUnique({ where: { id: userId } });
         let newStreak = user.streakCount;
 
-        if (true) { // Allow all game modes (including practice) to contribute to streak
+        if (true) { // Allow all game modes to contribute to streak
             const today = new Date(todayStr);
-            const lastPlayedDate = user.lastPlayed ? new Date(new Date(user.lastPlayed).getTime() - (new Date(user.lastPlayed).getTimezoneOffset() * 60000)).toISOString().split('T')[0] : null;
+            const dbLastPlayed = user.lastPlayed ? new Date(new Date(user.lastPlayed).getTime() - (new Date(user.lastPlayed).getTimezoneOffset() * 60000)).toISOString().split('T')[0] : null;
             
-            if (!lastPlayedDate) {
+            if (!dbLastPlayed) {
                 newStreak = 1;
             } else {
-                const lastDate = new Date(lastPlayedDate);
+                const lastDate = new Date(dbLastPlayed);
                 const diffTime = today - lastDate;
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
                 if (diffDays === 1) {
                     newStreak = user.streakCount + 1;
                 } else if (diffDays > 1) {
                     newStreak = 1; // Streak broken
-                } else if (diffDays === 0) {
-                    newStreak = user.streakCount; // Already played today
+                } else {
+                    // diffDays === 0: already played today, maintain streak
+                    newStreak = user.streakCount;
                 }
             }
         }
@@ -248,7 +253,7 @@ exports.syncBatch = async (req, res) => {
             return res.status(400).json({ message: 'Invalid batch entries' });
         }
 
-        const MAX_SCORE = 500;
+        const MAX_SCORE = 5000;
         const MAX_TIME = 86400; // 24 hours in seconds
         
         // Get today's local date string reliably
@@ -264,7 +269,11 @@ exports.syncBatch = async (req, res) => {
             const expectedPayload = `${userId}:${entry.score}:${entry.timeTaken}:${entry.seed || entry.date}:${APP_SECRET}`;
             const expectedHash = crypto.createHash('sha256').update(expectedPayload).digest('hex');
 
-            if (entry.hash && entry.hash !== expectedHash) {
+            // Fallback for guest accounts where frontend might use 'guest' instead of the UUID
+            const guestPayload = `guest:${entry.score}:${entry.timeTaken}:${entry.seed || entry.date}:${APP_SECRET}`;
+            const guestHash = crypto.createHash('sha256').update(guestPayload).digest('hex');
+
+            if (entry.hash && entry.hash !== expectedHash && entry.hash !== guestHash) {
                 console.warn(`Batch Sync Reject: Hash mismatch for ${entry.date}`);
                 return false;
             }
@@ -321,15 +330,41 @@ exports.syncBatch = async (req, res) => {
         }));
 
         // Phase 17: Strict Additive Sync (Idempotent!)
+        const currentDbUser = await prisma.user.findUnique({ where: { id: userId } });
+        if (!currentDbUser) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
         const earnedPoints = syncResults.reduce((sum, res) => sum + (res.pointDiff || 0), 0);
         const newCompletionsCount = syncResults.filter(r => r.isNewCompletion).length;
         
+        // Unified Streak Logic for Batch Sync
+        let newStreak = currentDbUser.streakCount;
+        const todayStrLocal = todayStr; // from line 256
+        const dbLastPlayedStr = currentDbUser.lastPlayed ? new Date(new Date(currentDbUser.lastPlayed).getTime() - (new Date(currentDbUser.lastPlayed).getTimezoneOffset() * 60000)).toISOString().split('T')[0] : null;
+
+        if (!dbLastPlayedStr) {
+            newStreak = 1;
+        } else {
+            const today = new Date(todayStrLocal);
+            const lastDate = new Date(dbLastPlayedStr);
+            const diffTime = today - lastDate;
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 1) {
+                newStreak = currentDbUser.streakCount + 1;
+            } else if (diffDays > 1) {
+                newStreak = 1; 
+            } else {
+                newStreak = currentDbUser.streakCount;
+            }
+        }
+
         const user = await prisma.user.update({
             where: { id: userId },
             data: {
                 totalPoints: { increment: earnedPoints },
-                // Streak is the maximum of what we have vs what was reported in this batch
-                streakCount: { set: Math.max(user?.streakCount || 0, streakCount || 0) },
+                streakCount: newStreak,
                 lastPlayed: new Date()
             }
         });

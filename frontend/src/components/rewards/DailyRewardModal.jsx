@@ -1,17 +1,21 @@
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Gift, CheckCircle2, Sparkles, Zap, Shield, Flame } from 'lucide-react';
 import { useEngagement } from '../../hooks/useEngagement';
 import { triggerRewardConfetti } from '../effects/ConfettiManager';
+import { playSound } from '../../utils/SoundManager';
 
 /**
  * DailyRewardModal - The 7-day habit loop popup.
  */
 const DailyRewardModal = ({ isOpen, onClose, onClaim }) => {
     const { getDailyRewardSchedule } = useEngagement();
-    const [lastClaimDate, setLastClaimDate] = useState(localStorage.getItem('lastRewardClaim') || '');
-    const [claimStreak, setClaimStreak] = useState(parseInt(localStorage.getItem('rewardStreak') || '0', 10));
-    const [isClaimedToday, setIsClaimedToday] = useState(false);
+    const [rewardStatus, setRewardStatus] = useState({ 
+        canClaim: false, 
+        isClaimedToday: false, 
+        currentStreak: 0 
+    });
 
     const [isClaiming, setIsClaiming] = useState(false);
 
@@ -19,30 +23,59 @@ const DailyRewardModal = ({ isOpen, onClose, onClaim }) => {
     const todayStr = new Date().toISOString().split('T')[0];
 
     useEffect(() => {
-        if (lastClaimDate === todayStr) {
-            setIsClaimedToday(true);
+        if (isOpen) {
+            fetchRewardStatus();
         }
-    }, [lastClaimDate, todayStr]);
+    }, [isOpen]);
 
-    const handleClaim = () => {
+    const fetchRewardStatus = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+            const res = await axios.get(`${API_URL}/api/rewards/status`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setRewardStatus(res.data);
+        } catch (err) {
+            console.error('Failed to fetch reward status:', err);
+        }
+    };
+
+    const handleClaim = async () => {
+        playSound('bubble_pop'); // Immediate gesture-triggered sound to wake up AudioContext
         setIsClaiming(true);
-        const newStreak = (claimStreak % 7) + 1;
-        setClaimStreak(newStreak);
-        setLastClaimDate(todayStr);
-        setIsClaimedToday(true);
-        
-        localStorage.setItem('lastRewardClaim', todayStr);
-        localStorage.setItem('rewardStreak', newStreak.toString());
+        try {
+            const token = localStorage.getItem('token');
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+            const res = await axios.post(`${API_URL}/api/rewards/claim`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
 
-        triggerRewardConfetti(newStreak === 7 ? 'premium' : 'mid');
-        
-        const reward = schedule[newStreak - 1];
-        if (onClaim) onClaim(reward);
-        
-        setTimeout(() => {
+            const { newStreak, rewardPoints, totalPoints } = res.data;
+            
+            triggerRewardConfetti(newStreak % 7 === 0 ? 'premium' : 'mid');
+            
+            if (onClaim) {
+                const reward = schedule[(newStreak - 1) % 7];
+                onClaim({ ...reward, points: rewardPoints, totalPoints });
+            }
+
+            setRewardStatus(prev => ({
+                ...prev,
+                isClaimedToday: true,
+                canClaim: false,
+                currentStreak: newStreak
+            }));
+
+            setTimeout(() => {
+                setIsClaiming(false);
+                onClose();
+            }, 3000);
+
+        } catch (err) {
+            console.error('Claim failed:', err);
             setIsClaiming(false);
-            onClose();
-        }, 3000);
+        }
     };
 
     const getIcon = (type) => {
@@ -139,16 +172,16 @@ const DailyRewardModal = ({ isOpen, onClose, onClaim }) => {
 
                             <div className="grid grid-cols-4 gap-3 mb-8">
                                 {schedule.map((day, idx) => {
-                                    const isCurrent = (claimStreak % 7) === idx;
-                                    const isPast = (claimStreak % 7) > idx;
+                                    const isCurrent = (rewardStatus.currentStreak % 7) === idx;
+                                    const isPast = (rewardStatus.currentStreak % 7) > idx;
 
                                     return (
                                         <motion.div
                                             key={day.day}
-                                            whileHover={!isClaimedToday && isCurrent ? { scale: 1.05 } : {}}
+                                            whileHover={!rewardStatus.isClaimedToday && isCurrent ? { scale: 1.05 } : {}}
                                             className={`
                                                 relative p-3 rounded-2xl border flex flex-col items-center justify-center aspect-square gap-1 transition-all
-                                                ${isCurrent && !isClaimedToday ? 'bg-accent/10 border-accent shadow-[0_0_15px_rgba(var(--accent-rgb),0.2)]' : 'bg-background/50 border-white/5'}
+                                                ${isCurrent && !rewardStatus.isClaimedToday ? 'bg-accent/10 border-accent shadow-[0_0_15px_rgba(var(--accent-rgb),0.2)]' : 'bg-background/50 border-white/5'}
                                                 ${isPast ? 'opacity-50 grayscale' : ''}
                                             `}
                                         >
@@ -168,20 +201,20 @@ const DailyRewardModal = ({ isOpen, onClose, onClaim }) => {
 
                             <button
                                 onClick={handleClaim}
-                                disabled={isClaimedToday || isClaiming}
+                                disabled={rewardStatus.isClaimedToday || isClaiming}
                                 className={`
                                     w-full py-4 rounded-2xl font-black text-lg tracking-widest uppercase transition-all shadow-lg
-                                    ${(isClaimedToday || isClaiming)
+                                    ${(rewardStatus.isClaimedToday || isClaiming)
                                         ? 'bg-surface-light text-text-muted cursor-not-allowed' 
                                         : 'bg-primary hover:scale-[1.02] active:scale-95 shadow-primary/20 hover:shadow-primary/40'
                                     }
                                 `}
                             >
-                                {isClaiming ? "SYNCING..." : isClaimedToday ? "PROTOCOL SYNCED" : "INITIATE CLAIM"}
+                                {isClaiming ? "SYNCING..." : rewardStatus.isClaimedToday ? "PROTOCOL SYNCED" : "INITIATE CLAIM"}
                             </button>
                             
                             <p className="text-center text-[10px] text-text-muted mt-4 font-mono uppercase tracking-widest">
-                                {isClaimedToday ? "Check back tomorrow for Day " + ((claimStreak % 7) + 1) : "Maintain your streak for greater rewards"}
+                                {rewardStatus.isClaimedToday ? "Check back tomorrow for Day " + ((rewardStatus.currentStreak % 7) + 1) : "Maintain your streak for greater rewards"}
                             </p>
                         </div>
                     </motion.div>
