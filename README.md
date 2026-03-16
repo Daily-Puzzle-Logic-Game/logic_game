@@ -103,5 +103,6 @@ This project recently underwent a major **Production Readiness** sweep:
 
 ---
 
-## 📜 License
-Developed by Bluestock Project. All rights reserved.
+## 📜 License & Credit
+**Lead Developer & Project Architect**: Gyanaranjan Sahoo
+Developed for Bluestock™. All rights reserved.
