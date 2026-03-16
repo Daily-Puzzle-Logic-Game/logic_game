@@ -53,18 +53,25 @@ const PodiumPosition = ({ player, rank, heightClass, delay }) => {
                 )}
             </div>
 
+            {/* Player Info - Floating */}
+            <div className="flex flex-col items-center mb-4 text-center w-full px-2 z-30">
+                <span className="text-white font-black text-sm md:text-base truncate w-full tracking-tight drop-shadow-md">
+                    {player.username}
+                </span>
+                <span className="text-[10px] font-mono text-cyan/60 font-black uppercase tracking-widest">
+                    {player.score} PTS
+                </span>
+            </div>
+
             {/* Platform */}
-            <div className={`w-36 ${heightClass} bg-gradient-to-b from-white/10 via-white/5 to-transparent border-t border-x border-white/10 rounded-t-[2.5rem] flex flex-col items-center pt-6 px-3 text-center shadow-2xl relative overflow-hidden`}>
+            <div className={`w-36 ${heightClass} bg-gradient-to-b from-white/10 via-white/5 to-transparent border-t border-x border-white/10 rounded-t-[2.5rem] flex flex-col items-center pt-6 px-3 text-center shadow-2xl relative`}>
                 <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
                 
-                <span className="text-white font-black text-sm truncate w-full mb-1 tracking-tight">{player.username}</span>
-                <span className="text-[10px] font-mono text-cyan/60 font-black uppercase tracking-widest">{player.score} PTS</span>
-                
-                <div className="mt-4 mb-4">
+                <div className="mt-2">
                     <RankBadge rank={levelInfo} size="sm" showLabel />
                 </div>
                 
-                <div className="text-5xl font-black opacity-10 select-none pb-4 absolute bottom-0 left-1/2 -translate-x-1/2" style={{ color: highlightColor }}>
+                <div className="text-5xl font-black opacity-10 select-none pb-4 absolute bottom-0 left-1/2 -translate-x-1/2 pointer-events-none" style={{ color: highlightColor }}>
                     #{rank}
                 </div>
             </div>
@@ -81,9 +88,9 @@ const LeaderboardPodium = ({ topPlayers = [] }) => {
 
     return (
         <div className="flex items-end justify-center gap-4 md:gap-8 pt-12 mb-16 px-4">
-            {rank2 && <PodiumPosition player={rank2} rank={2} heightClass="h-40" delay={0.2} />}
-            {rank1 && <PodiumPosition player={rank1} rank={1} heightClass="h-56" delay={0} />}
-            {rank3 && <PodiumPosition player={rank3} rank={3} heightClass="h-32" delay={0.4} />}
+            {rank2 && <PodiumPosition player={rank2} rank={2} heightClass="h-44" delay={0.2} />}
+            {rank1 && <PodiumPosition player={rank1} rank={1} heightClass="h-60" delay={0} />}
+            {rank3 && <PodiumPosition player={rank3} rank={3} heightClass="h-36" delay={0.4} />}
         </div>
     );
 };
