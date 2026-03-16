@@ -103,6 +103,11 @@ This project recently underwent a major **Production Readiness** sweep:
 
 ---
 
+## 🛠️ Verification & Support
+We have conducted extensive production readiness tests, but we encourage the **Bluestock™** team to perform a final verification. If any unexpected behaviors are detected or if you require minor adjustments, please reach out freely. We are committed to ensuring a perfect launch.
+
 ## 📜 License & Credit
 **Lead Developer & Project Architect**: Gyanaranjan Sahoo
+**Associate Developers**: [Team Member 1], [Team Member 2]
+
 Developed for Bluestock™. All rights reserved.
