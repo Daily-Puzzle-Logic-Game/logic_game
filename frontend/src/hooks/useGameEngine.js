@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import axios from 'axios';
+import api from '../config/api';
 import { getTodayDateString, getSecondsUntilMidnight } from '../utils/time';
 import { getOrSetGuestId } from '../utils/cookie';
 import SeededRandom, { encryptData } from '../utils/crypto';
@@ -24,55 +24,52 @@ export const useGameEngine = () => {
     const [achievements, setAchievements] = useState([]);
     const [todayCompleted, setTodayCompleted] = useState(false);
 
-    useEffect(() => {
-        const fetchDashboard = async () => {
-            try {
-                let currentToken = reduxToken || localStorage.getItem('token');
-                const guestId = !currentToken ? getOrSetGuestId() : null;
-                const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    const refetchData = useCallback(async (isSilent = false) => {
+        if (!isSilent) setIsInitializing(true);
+        try {
+            let currentToken = reduxToken || localStorage.getItem('token');
+            const guestId = !currentToken ? getOrSetGuestId() : null;
 
-                // 1. If no token, authenticate as guest ONLY if they were a guest previously
-                // This prevents automatic re-login after an explicit logout
-                const wasGuest = localStorage.getItem('isGuest') === 'true';
-                if (!currentToken && guestId && wasGuest) {
-                    const authRes = await axios.post(`${API_URL}/api/auth/guest`, { guestId });
-                    if (authRes.data.token) {
-                        currentToken = authRes.data.token;
-                        localStorage.setItem('token', currentToken);
-                        
-                        // Sync Redux store with silent login results
-                        const { user, token } = authRes.data;
-                        dispatch(guestLogin({ user, token }));
-                    }
+            // 1. If no token, authenticate as guest ONLY if they were a guest previously
+            const wasGuest = localStorage.getItem('isGuest') === 'true';
+            if (!currentToken && guestId && wasGuest) {
+                const authRes = await api.post('/api/auth/guest', { guestId });
+                if (authRes.data.token) {
+                    currentToken = authRes.data.token;
+                    localStorage.setItem('token', currentToken);
+                    
+                    // Sync Redux store with silent login results
+                    const { user, token } = authRes.data;
+                    dispatch(guestLogin({ user, token }));
                 }
+            }
 
-                if (!currentToken) {
-                    setIsInitializing(false);
-                    return;
-                }
+            if (!currentToken) {
+                if (!isSilent) setIsInitializing(false);
+                return;
+            }
 
-                // 2. Fetch Dashboard Data
-                const res = await axios.get(`${API_URL}/api/user/dashboard`, {
-                    headers: { Authorization: `Bearer ${currentToken}` }
-                });
+            // 2. Fetch Dashboard Data
+            const res = await api.get('/api/user/dashboard');
 
-                const cloudData = res.data;
-                setUserData({
-                    ...cloudData.user,
-                    stats: cloudData.stats
-                });
-                setActivityHistory(cloudData.activity || []);
-                setAchievements(cloudData.achievements || []);
-                setTodayCompleted(cloudData.todayCompleted);
+            const cloudData = res.data;
+            setUserData({
+                ...cloudData.user,
+                stats: cloudData.stats
+            });
+            setActivityHistory(cloudData.activity || []);
+            setAchievements(cloudData.achievements || []);
+            setTodayCompleted(cloudData.todayCompleted);
 
-                // Sync Journey Level to Redux
-                dispatch(updateEngagement({ 
-                    journeyLevel: cloudData.user.journeyLevel || 1,
-                    xp: cloudData.user.totalPoints || 0,
-                    streak: cloudData.user.streakCount || 0
-                }));
+            // Sync Journey Level to Redux
+            dispatch(updateEngagement({ 
+                journeyLevel: cloudData.user.journeyLevel || 1,
+                xp: cloudData.user.totalPoints || 0,
+                streak: cloudData.user.streakCount || 0
+            }));
 
-                // 3. Generate Today's Puzzle if not completed
+            // 3. Generate Today's Puzzle if not completed (Only if not silent)
+            if (!isSilent) {
                 const todayStr = getTodayDateString();
                 const rnd = new SeededRandom(todayStr);
 
@@ -110,16 +107,18 @@ export const useGameEngine = () => {
                     difficultyLevel,
                     startedAt: null
                 }));
-
-            } catch (err) {
-                console.error("GameEngine Dashboard Fetch Error", err);
-            } finally {
-                setIsInitializing(false);
             }
-        };
 
-        fetchDashboard();
+        } catch (err) {
+            console.error("GameEngine Dashboard Fetch Error", err);
+        } finally {
+            if (!isSilent) setIsInitializing(false);
+        }
     }, [isAuthenticated, reduxToken, dispatch]);
+
+    useEffect(() => {
+        refetchData();
+    }, [refetchData]);
 
     // Timer Loop
     useEffect(() => {
@@ -143,6 +142,7 @@ export const useGameEngine = () => {
         activity: activityHistory,
         achievements,
         todayCompleted,
-        secondsToMidnight
+        secondsToMidnight,
+        refetchData
     };
 };

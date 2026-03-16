@@ -11,7 +11,8 @@ const SessionExtender = ({ isOpen, onClose, onAction }) => {
     const handleAction = (path) => {
         onClose();
         if (path === 'reload') {
-            window.location.reload();
+            if (onAction) onAction();
+            else window.location.reload();
         } else {
             navigate(path);
         }

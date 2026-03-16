@@ -1,5 +1,5 @@
-import axios from 'axios';
 import StorageManager from './StorageManager';
+import api from '../config/api';
 
 const SYNC_QUEUE_KEY = 'sync_score_queue';
 const BATCH_SIZE = 1;
@@ -29,14 +29,9 @@ class SyncManager {
         if (queue.length === 0) return { status: 'empty' };
 
         try {
-            const token = localStorage.getItem('token');
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
-            const response = await axios.post(`${API_URL}/api/scores/sync-batch`, {
+            const response = await api.post('/api/scores/sync-batch', {
                 entries: queue,
                 ...metadata
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
             });
 
             if (response.status === 200) {

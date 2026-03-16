@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import api from '../config/api';
 import { useSelector } from 'react-redux';
 import { Trophy, Clock, ArrowLeft, Award, Target, LightbulbOff, ChevronRight, Star, Flame } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -61,23 +62,14 @@ const Leaderboard = () => {
         const fetchLeaderboard = async () => {
             setIsLoading(true);
             try {
-                const url = leaderboardType === 'daily' 
-                    ? `/api/scores/leaderboard?date=${today}` 
-                    : `/api/scores/leaderboard`;
-                    
-                const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-                const response = await fetch(`${API_URL}${url}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    if(isMounted) {
-                        setApiScores(data);
-                        setIsApiOffline(false);
-                        setIsLoading(false);
-                        return;
-                    }
+                const dateStr = leaderboardType === 'daily' ? today : '';
+                const res = await api.get(`/api/scores/leaderboard?timeframe=${leaderboardType}&date=${dateStr}`);
+                if (isMounted) {
+                    setApiScores(res.data);
+                    setIsApiOffline(false);
                 }
-            } catch (error) {
-                console.warn('Backend API not reachable.');
+            } catch (err) {
+                console.warn('Backend API not reachable.', err);
                 if (isMounted) setIsApiOffline(true);
             } 
             if (isMounted) setIsLoading(false);

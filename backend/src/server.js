@@ -26,7 +26,14 @@ const syncLimiter = rateLimit({
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'https://logic-looper-eta.vercel.app'
+    ],
+    credentials: true
+}));
 app.use(express.json());
 app.use('/api/', globalLimiter);
 app.use('/api/scores/sync', syncLimiter);

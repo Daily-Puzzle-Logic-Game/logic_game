@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../config/api';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Flame, Trophy, Calendar, CheckCircle, Lock, Award } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -37,12 +37,11 @@ const StreakKeeperChallenge = () => {
         try {
             const token = localStorage.getItem('token');
             if (token) {
-                const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-                await axios.post(`${API_URL}/api/user/achievement`, {
+                await api.post('/api/user/achievement', {
                     badgeType: 'streak_keeper',
                     title: 'Milestone 7 Achieved',
                     message: 'Streak Keeper status confirmed. 30-day logic pulse maintained.'
-                }, { headers: { Authorization: `Bearer ${token}` } });
+                });
             }
         } catch (err) {
             console.error('Achievement Sync Error:', err);

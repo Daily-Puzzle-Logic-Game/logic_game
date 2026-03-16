@@ -1,66 +1,107 @@
-# Logic Looper
+# 🧠 Logic Looper: The Daily Brain Engine
 
-Develop an engaging daily puzzle game that combines logic challenges with streak-based motivation systems. The game must be highly interactive, visually appealing, and designed for daily engagement over 365 days with minimal server dependency.
+**Logic Looper** is a high-fidelity, daily puzzle platform designed to sharpen cognitive intuition through structured logic training. Built with a "wow-factor" aesthetic, it combines addictive gameplay mechanics with a robust streak-based motivation system.
 
-## Core Philosophy
-- **Client-First Architecture**: Maximum logic execution on client-side
-- **Daily Engagement**: Hook users with progressive difficulty and streak rewards
-- **Server Efficiency**: Minimize read/write operations to optimize costs
-- **Polished UX**: Professional, intuitive, and delightful user experience
+---
 
-## 🎮 Game Concept
-### Gameplay Mechanics
-- **Daily Logic Puzzles**: Different puzzle types rotating daily
-- **Progressive Difficulty**: Levels auto-adjust based on user performance
-- **Time-based Challenges**: Optional timed modes for extra rewards
-- **Hint System**: Limited hints per day (client-side managed)
-- **Solution Validation**: All puzzle solutions verified client-side
+## 🚀 Live Production Links
 
-### Puzzle Types
-- Number Matrix (Sudoku-like variations)
-- Pattern Matching (Visual/Logical patterns)
-- Sequence Solvers (Mathematical/Logical sequences)
-- Deduction Grids (Einstein puzzle style)
-- Binary Logic (Gate-based puzzles)
+- **Frontend**: [https://logic-looper-eta.vercel.app](https://logic-looper-eta.vercel.app)
+- **Backend**: [https://logicgame-nine.vercel.app](https://logicgame-nine.vercel.app)
 
-## 🏗️ Technical Architecture
-### Frontend (Client-Side Heavy)
-- React 18+ (Functional Components with Hooks)
-- Redux Toolkit (Client State Management)
-- Tailwind CSS + Styled Components
-- Framer Motion (Animations)
-- Day.js (Date handling)
-- Crypto-js (Client-side puzzle generation/validation)
-- IndexedDB (Client-side storage for offline play)
+---
 
-### Backend (Minimalist)
-- Node.js + Express
-- PostgreSQL (Neon.tech - Serverless Postgres)
-- ORM: Prisma
-- Authentication: NextAuth.js compatible setup
-- Deployment: Vercel (Serverless Functions)
+## 🎮 Core Features
 
-## 🛠️ Setup & Environment
+- **Daily Logic Rotation**: A new specialized logic puzzle every 24 hours.
+- **Global Leaderboards**: Real-time rank tracking and competitive scoring.
+- **Neural Journey**: A multi-level progression map with increasing complexity.
+- **Streak Propulsion**: Consecutive solve rewards and "Streak Shields" to protect your progress.
+- **Challenges**: Specialized modes like "Hintless Hero" and "Puzzle Master" to earn unique badges.
+- **Premium UX**: Glassmorphic UI, fluid Framer Motion animations, and dynamic "Neural" backgrounds.
 
-To run this project locally, create `.env` files in the `backend` and `frontend` directories with the following configuration:
+## 🕹️ Puzzle Modules
 
-### Backend (`backend/.env`)
+- **Number Matrix**: Sudoku-inspired deduction engines.
+- **Pattern Matching**: Neural pattern recognition challenges.
+- **Binary Logic**: Gate-based optimization puzzles.
+- **Deduction Grids**: Einstein-style logical deduction.
+- **Sequence Solvers**: Mathematical and logical sequence identification.
+
+---
+
+## 🏗️ Technical Stack
+
+### Frontend
+- **Framework**: React 18 (Vite)
+- **State Management**: Redux Toolkit (RTK)
+- **Styling**: Tailwind CSS + Custom Design Tokens
+- **Animations**: Framer Motion
+- **Icons**: Lucide React
+- **Auth**: Google OAuth 2.0 Integrations
+
+### Backend
+- **Engine**: Node.js + Express
+- **Database**: PostgreSQL (via Neon Serverless)
+- **ORM**: Prisma
+- **Deployment**: Vercel Serverless Functions
+- **Security**: JWT Authentication + CORS strict policy
+
+---
+
+## 🛠️ Local Development
+
+### 1. Requirements
+- Node.js (v18+)
+- PostgreSQL Database (Local or Cloud)
+
+### 2. Environment Setup
+
+Create `.env` files in both directories:
+
+**Backend (`/backend/.env`)**
 ```env
 PORT=3000
-DATABASE_URL="YOUR_DATABASE_URL"
-GOOGLE_CLIENT_ID="YOUR_GOOGLE_CLIENT_ID"
-GOOGLE_CLIENT_SECRET="YOUR_GOOGLE_CLIENT_SECRET"
-JWT_SECRET="YOUR_JWT_SECRET"
+DATABASE_URL="postgresql://..."
+GOOGLE_CLIENT_ID="..."
+GOOGLE_CLIENT_SECRET="..."
+JWT_SECRET="..."
 ```
 
-### Frontend (`frontend/.env`)
+**Frontend (`/frontend/.env`)**
 ```env
-VITE_GOOGLE_CLIENT_ID="YOUR_VITE_GOOGLE_CLIENT_ID"
-VITE_API_URL="http://localhost:3000/api"
+VITE_GOOGLE_CLIENT_ID="..."
+VITE_API_URL="http://localhost:3000"
 ```
 
-## 🚀 Getting Started
-1. **Clone the repository**
-2. **Install dependencies**: `npm install` in both `backend` and `frontend`
-3. **Database Migration**: `npx prisma migrate dev` in the `backend` folder
-4. **Run Development Servers**: `npm run dev` in both folders
+### 3. Installation
+```bash
+# In the root, install both
+cd backend && npm install
+cd ../frontend && npm install
+```
+
+### 4. Running
+```bash
+# Terminal 1
+cd backend && npm run dev
+
+# Terminal 2
+cd frontend && npm run dev
+```
+
+---
+
+## ✨ Recent Refactors & Improvements
+
+This project recently underwent a major **Production Readiness** sweep:
+- **API Centralization**: Removed all hardcoded `localhost` URLs. All requests now route through a centralized dynamic config.
+- **UX Scroll Reset**: Implemented a global `ScrollToTop` listener to ensure seamless navigation between routes.
+- **Backend CORS Policy**: Updated to securely allow the production frontend while maintaining local development flexibility.
+- **Redux Stability**: Fixed payload processing errors in the notification system.
+- **Mobile Optimization**: Refined the landing page and navigation for responsive devices.
+
+---
+
+## 📜 License
+Developed by Bluestock Project. All rights reserved.

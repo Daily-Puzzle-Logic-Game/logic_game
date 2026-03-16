@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import api from '../config/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Trophy, Target, CheckCircle, Clock, Lock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -202,12 +202,11 @@ const PuzzleMasterChallenge = () => {
             try {
                 const token = localStorage.getItem('token');
                 if (token) {
-                    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-                    await axios.post(`${API_URL}/api/user/achievement`, {
+                    await api.post('/api/user/achievement', {
                         badgeType: 'puzzle_master',
                         title: 'Milestone 6 Achieved',
                         message: 'Puzzle Master status unlocked! 50 puzzles successfully decrypted.'
-                    }, { headers: { Authorization: `Bearer ${token}` } });
+                    });
                 }
             } catch (err) {
                 console.error('Achievement Sync Error:', err);

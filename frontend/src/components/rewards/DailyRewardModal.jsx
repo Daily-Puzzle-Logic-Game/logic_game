@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../config/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Gift, CheckCircle2, Sparkles, Zap, Shield, Flame } from 'lucide-react';
 import { useEngagement } from '../../hooks/useEngagement';
@@ -30,11 +30,7 @@ const DailyRewardModal = ({ isOpen, onClose, onClaim }) => {
 
     const fetchRewardStatus = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-            const res = await axios.get(`${API_URL}/api/rewards/status`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get('/api/rewards/status');
             setRewardStatus(res.data);
         } catch (err) {
             console.error('Failed to fetch reward status:', err);
@@ -45,11 +41,7 @@ const DailyRewardModal = ({ isOpen, onClose, onClaim }) => {
         playSound('bubble_pop'); // Immediate gesture-triggered sound to wake up AudioContext
         setIsClaiming(true);
         try {
-            const token = localStorage.getItem('token');
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-            const res = await axios.post(`${API_URL}/api/rewards/claim`, {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.post('/api/rewards/claim', {});
 
             const { newStreak, rewardPoints, totalPoints } = res.data;
             

@@ -24,6 +24,7 @@ import ActivityHeatmap from '../components/dashboard/ActivityHeatmap';
 import ProgressEngine from '../engines/ProgressEngine';
 import StreakEngine from '../engines/StreakEngine';
 import RankBadge from '../components/ui/RankBadge';
+import api, { getApiUrl } from '../config/api';
 
 const LeaderboardPreview = () => {
   const [topSolvers, setTopSolvers] = useState([]);
@@ -33,7 +34,7 @@ const LeaderboardPreview = () => {
     const fetchTopSolvers = async () => {
       try {
         const todayStr = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-        const res = await fetch(`/api/scores/leaderboard?date=${todayStr}`);
+        const res = await fetch(getApiUrl(`/api/scores/leaderboard?date=${todayStr}`));
         const data = await res.json();
         
         if (Array.isArray(data)) {
@@ -133,10 +134,7 @@ const LandingPage = ({ secondsToMidnight = 0, user = null, todayProgress = null,
     if (user && token) {
       const fetchReward = async () => {
         try {
-          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-          const res = await axios.get(`${API_URL}/api/rewards/status`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+          const res = await api.get('/api/rewards/status');
           setRewardStatus(res.data);
         } catch (err) {
           console.error('Landing reward fetch failed:', err);
@@ -150,7 +148,7 @@ const LandingPage = ({ secondsToMidnight = 0, user = null, todayProgress = null,
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await axios.get('/api/user/stats');
+        const res = await api.get('/api/user/stats');
         const data = res.data;
         if (data && !data.message) {
           setGlobalStats(data);
@@ -589,7 +587,7 @@ const LandingPage = ({ secondsToMidnight = 0, user = null, todayProgress = null,
                       animate={{ scale: [1, 1.1, 1], opacity: 1 }}
                       transition={{ duration: 2, repeat: Infinity }}
                       className="bg-accent text-white text-[10px] font-black px-3 py-1 rounded-full shadow-[0_0_15px_rgba(var(--accent-rgb),0.5)] cursor-pointer"
-                      onClick={() => window.location.reload()} // Reload triggers the App.jsx check or we can pass a prop
+                      onClick={() => triggerSync && triggerSync()} // Use triggerSync instead of reload
                     >
                       🎁 REWARD UNCLAIMED
                     </motion.div>

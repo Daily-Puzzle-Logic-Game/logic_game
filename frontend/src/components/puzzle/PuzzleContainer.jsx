@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, CheckCircle2, AlertCircle, Sparkles, Timer as TimerIcon, Trophy, Lightbulb, RotateCcw, Power, Zap, Activity, Flame, ShieldCheck, Star, Target } from 'lucide-react';
 import CelebrationBurst from '../ui/CelebrationBurst';
 import ParticleField from '../ui/ParticleField';
-import axios from 'axios';
+import api, { getApiUrl } from '../../config/api';
 import { getTodayDateString } from '../../utils/time';
 import { PUZZLE_TYPES, PUZZLE_COMPONENTS } from '../../config/puzzleTypes';
 import SeededRandom, { generateScoreHash, encryptData, decryptData } from '../../utils/crypto';
@@ -273,11 +273,7 @@ const PuzzleContainer = ({ user: propUser, todayProgress, practiceMode = false, 
                 const confirmPurchase = window.confirm(`Out of hints! Spend ${HINT_COST} points to buy 1 extra hint?`);
                 if (confirmPurchase) {
                     try {
-                        const token = localStorage.getItem('token');
-                        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-                        const response = await axios.post(`${API_URL}/api/user/buy-hint`, {}, {
-                            headers: { Authorization: `Bearer ${token}` }
-                        });
+                        const response = await api.post('/api/user/buy-hint', {});
                         
                         if (response.status === 200) {
                             dispatch(buyHintSuccess({ totalPoints: response.data.totalPoints }));
@@ -474,9 +470,8 @@ const PuzzleContainer = ({ user: propUser, todayProgress, practiceMode = false, 
 
                     // Journey progression still syncs immediately for UI feedback
                     if (isJourney) {
-                        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
                         const token = localStorage.getItem('token');
-                        await axios.post(`${API_URL}/api/user/journey/complete`, {
+                        await axios.post(getApiUrl('/api/user/journey/complete'), {
                             levelSolved: todayProgress.level
                         }, { headers: { Authorization: `Bearer ${token}` } });
                     }

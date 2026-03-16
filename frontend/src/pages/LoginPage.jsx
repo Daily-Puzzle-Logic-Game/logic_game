@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GoogleLogin } from '@react-oauth/google';
 import { ArrowLeft, Mail, Lock, User as UserIcon } from 'lucide-react';
-import axios from 'axios';
+import api, { getApiUrl } from '../config/api';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginSuccess, guestLogin } from '../store/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
@@ -39,20 +39,17 @@ const LoginPage = () => {
         try {
             const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/signup';
             
-            const response = await axios.post(
-                `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}${endpoint}`,
-                formData
-            );
+            const response = await api.post(endpoint, formData);
 
             const { user, token } = response.data;
             dispatch(loginSuccess({ user, token }));
 
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             localStorage.setItem('token', token);
-            navigate('/profile');
+            navigate('/');
         } catch (err) {
             console.error('Auth Error:', err);
-            setError(err.response?.data?.message || 'Authentication failed. Please try again.');
+            setError(`Cloud Sync Logic Interrupted. Ensure backend is active at ${getApiUrl('')}`);
         } finally {
             setIsLoading(false);
         }
@@ -64,7 +61,7 @@ const LoginPage = () => {
         try {
             const guestId = getOrSetGuestId();
             // Try silent login first
-            const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/guest`, {
+            const response = await api.post('/api/auth/guest', {
                 guestId
             });
 
@@ -76,9 +73,9 @@ const LoginPage = () => {
             if (!isDefaultName) {
                 localStorage.setItem('token', token);
                 localStorage.setItem('user', JSON.stringify(user));
-                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
                 dispatch(guestLogin({ user, token }));
-                navigate('/profile');
+                navigate('/');
             } else {
                 // Otherwise, show the name input mode
                 setMode('guest');
@@ -100,7 +97,7 @@ const LoginPage = () => {
         setError(null);
         try {
             const guestId = getOrSetGuestId();
-            const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/guest`, {
+            const response = await api.post('/api/auth/guest', {
                 guestId,
                 name: nameToUse
             });
@@ -109,10 +106,10 @@ const LoginPage = () => {
             
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(user));
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
             dispatch(guestLogin({ user, token }));
-            navigate('/profile');
+            navigate('/');
 
         } catch (err) {
             console.error('Guest Error:', err);
@@ -126,17 +123,16 @@ const LoginPage = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await axios.post(
-                `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/google`,
+            const response = await api.post('/api/auth/google',
                 { token: credentialResponse.credential }
             );
 
             const { user, token } = response.data;
             dispatch(loginSuccess({ user, token }));
 
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             localStorage.setItem('token', token);
-            navigate('/profile');
+            navigate('/');
         } catch (err) {
             console.error('Google Auth Error:', err);
             const msg = err.response?.status === 403 

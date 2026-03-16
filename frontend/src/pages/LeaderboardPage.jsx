@@ -1,36 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import api from '../config/api';
 import { Trophy, Calendar, Medal } from 'lucide-react';
 import MainLayout from '../components/layout/MainLayout';
 
 export default function LeaderboardPage() {
-    const [leaderboard, setLeaderboard] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState('all-time'); // 'all-time' or 'daily'
+    const [leaderboardData, setLeaderboardData] = useState({ top_players: [] });
+    const [isLoading, setIsLoading] = useState(true);
+    const [timeframe, setTimeframe] = useState('all-time'); // 'all-time' or 'daily'
 
     useEffect(() => {
         const fetchLeaderboard = async () => {
-            setLoading(true);
+            setIsLoading(true);
             try {
-                let url = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/scores/leaderboard`;
-                if (filter === 'daily') {
-                    const today = new Date().toISOString().split('T')[0];
-                    url += `?date=${today}`;
-                }
-                const response = await fetch(url);
-                if (response.ok) {
-                    const data = await response.json();
-                    setLeaderboard(data);
-                }
-            } catch (error) {
-                console.error("Failed to fetch leaderboard", error);
+                const dateStr = timeframe === 'daily' ? getTodayDateString() : '';
+                const res = await api.get(`/api/scores/leaderboard?timeframe=${timeframe}&date=${dateStr}`);
+                setLeaderboardData({
+                    top_players: res.data.slice(0, 100).map((player, index) => ({
+                        rank: index + 1,
+                        ...player
+                    }))
+                });
+            } catch (err) {
+                console.error('Failed to fetch leaderboard:', err);
             } finally {
-                setLoading(false);
+                setIsLoading(false);
             }
         };
 
         fetchLeaderboard();
-    }, [filter]);
+    }, [timeframe]);
 
     return (
         <MainLayout>

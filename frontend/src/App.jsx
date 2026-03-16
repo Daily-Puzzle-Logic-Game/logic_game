@@ -5,6 +5,7 @@ import axios from 'axios';
 import MainLayout from './components/layout/MainLayout';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, Puzzle, Zap } from 'lucide-react';
+import ScrollToTop from './components/common/ScrollToTop';
 import { useGameEngine } from './hooks/useGameEngine';
 import AmbientBackground from './components/ui/AmbientBackground';
 import { useDispatch, useSelector } from 'react-redux';
@@ -30,10 +31,11 @@ const AchievementToast = lazy(() => import('./components/ui/AchievementToast'));
 const AchievementCelebration = lazy(() => import('./components/rewards/AchievementCelebration'));
 
 import { clearLastUnlocked } from './store/slices/achievementSlice';
+import { getApiUrl } from './config/api';
 
 function App() {
   const dispatch = useDispatch();
-  const { isInitializing, user, secondsToMidnight } = useGameEngine();
+  const { isInitializing, user, secondsToMidnight, refetchData } = useGameEngine();
   const currentPuzzle = useSelector((state) => state.game.currentPuzzle);
   const lastUnlocked = useSelector((state) => state.achievements.lastUnlocked);
   
@@ -57,8 +59,7 @@ function App() {
       // 1. Check Daily Reward Status via API
       const checkReward = async () => {
         try {
-          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-          const res = await axios.get(`${API_URL}/api/rewards/status`, {
+          const res = await axios.get(getApiUrl('/api/rewards/status'), {
             headers: { Authorization: `Bearer ${token}` }
           });
           
@@ -82,6 +83,7 @@ function App() {
 
   return (
     <MainLayout>
+      <ScrollToTop />
       <AmbientBackground />
       <AnimatePresence mode="wait">
         {isInitializing ? (
@@ -111,7 +113,7 @@ function App() {
                     secondsToMidnight={secondsToMidnight}
                     user={user}
                     todayProgress={currentPuzzle}
-                    triggerSync={() => window.location.reload()}
+                    triggerSync={() => refetchData(true)}
                   />
                 } />
                 <Route path="/profile" element={<ProfileCenter />} />
@@ -124,8 +126,8 @@ function App() {
                 <Route path="/challenge/puzzle-master" element={<PuzzleMasterChallenge />} />
                 <Route path="/challenge/streak-keeper" element={<StreakKeeperChallenge />} />
                 <Route path="/games" element={<GamesLibrary />} />
-                <Route path="/games/:type" element={<PracticeGame triggerSync={() => window.location.reload()} />} />
-                <Route path="/challenge" element={<ChallengePage triggerSync={() => window.location.reload()} />} />
+                <Route path="/games/:type" element={<PracticeGame triggerSync={() => refetchData(true)} />} />
+                <Route path="/challenge" element={<ChallengePage triggerSync={() => refetchData(true)} />} />
                 <Route
                   path="/landing"
                   element={
@@ -133,7 +135,7 @@ function App() {
                       secondsToMidnight={secondsToMidnight}
                       user={user}
                       todayProgress={currentPuzzle}
-                      triggerSync={() => window.location.reload()}
+                      triggerSync={() => refetchData(true)}
                     />
                   }
                 />
